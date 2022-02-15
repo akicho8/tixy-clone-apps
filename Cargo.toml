@@ -1,0 +1,11 @@
+[package]
+name = "tixy_rust_clone_using_nannno"
+version = "0.1.0"
+edition = "2021"
+default-run = "tixy_rust_clone_using_nannno"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nannou = "0.18.1"
+rand = "0.8.5"
