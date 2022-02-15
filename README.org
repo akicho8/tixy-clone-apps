@@ -1,0 +1,3 @@
+* TIXY Rust clone using nannou
+
+  Rust + nannou の使い方を覚えるために https://tixy.land/ の clone を作ってみる
