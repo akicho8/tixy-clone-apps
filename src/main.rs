@@ -13,18 +13,31 @@ use nannou::prelude::*;
 use nannou::geom::Rect;
 use rand::Rng;
 
+struct Pattern {
+    favorite: bool,
+    name: String,
+    func: fn(f32, f32, f32, f32) -> f32,
+}
+
 struct Model {
     view_rect: Rect,
     cell_wh: Vec2,
     half_cell_wh: Vec2,
     counter: usize,
+    start_time: f32,
     selected_index: isize,
-    patterns: Vec<fn(f32, f32, f32, f32) -> f32>,
+    patterns: Vec<Pattern>,
 }
 
 impl Model {
-    fn preset_change(&mut self, sign: isize) {
-        self.selected_index += sign
+    fn current_pattern(&self) -> &Pattern {
+        let i = self.selected_index as usize % self.patterns.len();
+        &self.patterns[i as usize]
+    }
+
+    fn preset_change(&mut self, app: &App, sign: isize) {
+        self.selected_index += sign;
+        self.start_time = app.time;
     }
 
     // 長方形の辺の比率を返す
@@ -85,101 +98,54 @@ fn model(app: &App) -> Model {
         cell_wh: Vec2::ZERO,
         half_cell_wh: Vec2::ZERO,
         counter: 0,
+        start_time: 0.0,
         selected_index: 0,
         patterns: vec![
-            |_t, _i, _x, _y| if rand::random::<f32>() < 0.1 { 1.0 } else { 0.0 },
-            |_t, _i, _x, _y| rand::random::<f32>(),
-            |_t, _i, _x, _y| _t.sin(),
-            |_t, _i, _x, _y| _i / 256.0,
-            |_t, _i, _x, _y| _x / 16.0,
-            |_t, _i, _x, _y| _y / 16.0,
-            |_t, _i, _x, _y| _y - 7.5,
-            |_t, _i, _x, _y| _y - _t,
-            |_t, _i, _x, _y| _y - _t * 4.0,
-            |_t, _i, _x, _y| [1.0, 0.0, -1.0][(_i % 3.0) as usize],
-            |_t, _i, _x, _y| (_t - ((_x - 7.5).pow(2.0) + (_y - 6.0).pow(2.0)).sqrt()).sin(),
-            |_t, _i, _x, _y| (_y / 8.0 + _t).sin(),
-            |_t, _i, _x, _y| _y - _x,
-            // |_t, _i, _x, _y| { btoi((_y > _x) && btoi((14.0 - _x) < _y)) },
-            |_t, _i, _x, _y| _i % 4.0 - _y % 4.0,
-            |_t, _i, _x, _y| if (_i % 4.0) > 0.0 && (_y % 4.0) > 0.0 { 1.0 } else { 0.0 },
-            |_t, _i, _x, _y| if _x > 3.0 && _y > 3.0 && _x < 12.0 && _y < 12.0 { 1.0 } else { 0.0 },
-            |_t, _i, _x, _y| if _x > _t && _y > _t && _x < 15.0 - _t && _y < 15.0 - _t { -1.0 } else { 0.0 },
-            |_t, _i, _x, _y| (_y - 6.0) * (_x - 6.0),
-            |_t, _i, _x, _y| (_y - 4.0 * _t) * (_x - 2.0 - _t),
-            |_t, _i, _x, _y| if ((4.0 * _t) as isize & _i as isize & _x as isize & _y as isize) != 0 { 1.0 } else { 0.0 },
-            |_t, _i, _x, _y| if _y == 8.0 { if ((_t * 10.0) as isize & (1<<(_x as usize))) != 0 {1.0} else {0.0} } else { 0.0 },
-            |_t, _i, _x, _y| rand::thread_rng().gen_range(-1.0..=1.0),
-            |_t, _i, _x, _y| _i.pow(2.0).sin(),
-            |_t, _i, _x, _y| (_t + _i + _x * _y).cos(),
-            |_t, _i, _x, _y| (_x / 2.0).sin() - (_x - _t).sin() - _y + 6.0,
-            |_t, _i, _x, _y| (_x - 8.0) * (_y - 8.0) - _t.sin() * 64.0,
-            // |_t, _i, _x, _y| -0.4 / hypot(_x-_t % 10.0, _y-_t%8.0) - _t % 2.0 * 9.0,
-            |_t, _i, _x, _y| (_t - (_x*_x+_y*_y).sqrt()).sin()                                           ,
-            //         |_t, _i, _x, _y| [5463,2194,2386][_y.to_i + (_t*9).to_i & 7] & (1 << _x-1)         ,
-            //         |_t, _i, _x, _y| _y>0 && (((_x-8) / _y + _t*5).to_i & 1 ^ (1/_y*8).to_i & 1) * _y / 5 ,
-            //         |_t, _i, _x, _y| _y-_t*3+9+3*cos(_x*3-_t)-5*sin(_x*7)                                ,
-            //         |_t, _i, _x, _y| d=_y*_y%5.9+1;(((_x+_t*50/d).to_i&15).zero? ? 1/d : 0)             ,
-            //         |_t, _i, _x, _y| 1.0/32.0*tan(_t/64.0*_x*tan(_i-_x))                                ,
-            //         |_t, _i, _x, _y| 'p}¶¼<¼¶}p'.codepoints[_x] & 2**_y.to_i                        ,
-            // |_t, _i, _x, _y| hypot(_x-=_t%4*5,_y-=8)<6 && (_x<_y || _y<-_x)                        ,
-            // |_t, _i, _x, _y| _x.to_i.even? && _y < 9 && _y > (4 + sin(8*_t+_x*_x) + _x / 4)        ,
-            // |_t, _i, _x, _y| _y == _x || ((15-_x == _y) ? -1 : 0 )                              ,
-            // |_t, _i, _x, _y| _x==0 || _x==15 || _y==0 || _y==15                                 ,
-            // |_t, _i, _x, _y| 8*_t%13 - hypot(_x-7.5, _y-7.5)                                   ,
-            // |_t, _i, _x, _y| sin(2*atan((_y-7.5)/(_x-7.5))+5*_t)                               ,
-            // |_t, _i, _x, _y| (_x-_y) - sin(_t) * 16                                            ,
-            // |_t, _i, _x, _y| (_x-_y)/24 - sin(_t)                                              ,
-            // |_t, _i, _x, _y| sin(_t*5) * tan(_t*7)                                            ,
-            // |_t, _i, _x, _y| (_x-5)**2 + (_y-5)**2 - 99*sin(_t)                                ,
-
-            //     { favorite: false, name: "default",                                              func: -> (t, i, x, y) { sin(y/8+t)                                                     }},
-            //     { favorite: false, name: "for every dot return 0 or 1 to change the visibility", func: -> (t, i, x, y) { rand < 0.1                                                     }},
-            //     { favorite: false, name: "use a float between 0 and 1 to define the size",       func: -> (t, i, x, y) { rand                                                           }},
-            //     { favorite: false, name: "parameter `t` is the time in seconds",                 func: -> (t, i, x, y) { sin(t)                                                         }},
-            //     { favorite: false, name: "parameter `i` is the index of the dot (0..255)",       func: -> (t, i, x, y) { i / 256                                                        }},
-            //     { favorite: false, name: "`x` is the column index from 0 to 15",                 func: -> (t, i, x, y) { x / 16                                                         }},
-            //     { favorite: false, name: "`y` is the row also from 0 to 15",                     func: -> (t, i, x, y) { y / 16                                                         }},
-            //     { favorite: false, name: "positive numbers are white, negatives are red",        func: -> (t, i, x, y) { y - 7.5                                                        }},
-            //     { favorite: false, name: "use the time to animate values",                       func: -> (t, i, x, y) { y - t                                                          }},
-            //     { favorite: false, name: "multiply the time to change the speed",                func: -> (t, i, x, y) { y - t*4                                                        }},
-            //     { favorite: false, name: "create PresetInfo using different color",              func: -> (t, i, x, y) { [1, 0, -1][i%3]                                                }},
-            //     { favorite: true,  name: "skip `Math` to use methods",                           func: -> (t, i, x, y) { sin(t-sqrt((x-7.5)**2+(y-6)**2))                               }},
-            //     { favorite: false, name: "more examples",                                        func: -> (t, i, x, y) { sin(y/8 + t)                                                   }},
-            //     { favorite: false, name: "simple triangle",                                      func: -> (t, i, x, y) { y - x                                                          }},
-            //     { favorite: false, name: "quarter triangle",                                     func: -> (t, i, x, y) { (y > x) && (14-x < y)                                          }},
-            //     { favorite: false, name: "pattern",                                              func: -> (t, i, x, y) { i%4 - y%4                                                      }},
-            //     { favorite: false, name: "grid",                                                 func: -> (t, i, x, y) { (i%4)>0 && (y%4)>0                                             }},
-            //     { favorite: false, name: "square",                                               func: -> (t, i, x, y) { x>3 && y>3 && x<12 && y<12                                     }},
-            //     { favorite: false, name: "animated square",                                      func: -> (t, i, x, y) { (x>t && y>t && x<15-t && y<15-t) ? -1 : 0                      }},
-            //     { favorite: false, name: "mondrian squares",                                     func: -> (t, i, x, y) { (y-6) * (x-6)                                                  }},
-            //     { favorite: true,  name: "moving cross",                                         func: -> (t, i, x, y) { (y-4*t) * (x-2-t)                                              }},
-            //     { favorite: false, name: "sierpinski",                                           func: -> (t, i, x, y) { (4*t).to_i & i.to_i & x.to_i & y.to_i                          }},
-            //     { favorite: false, name: "binary clock",                                         func: -> (t, i, x, y) { y==8 && (t*10).to_i & (1<<x)                                   }},
-            //     { favorite: false, name: "random noise",                                         func: -> (t, i, x, y) { rand(-1.0..1.0)                                                }},
-            //     { favorite: false, name: "static smooth noise",                                  func: -> (t, i, x, y) { sin(i**2)                                                      }},
-            //     { favorite: true,  name: "animated smooth noise",                                func: -> (t, i, x, y) { cos(t + i + x * y)                                             }},
-            //     { favorite: true,  name: "waves",                                                func: -> (t, i, x, y) { sin(x/2) - sin(x-t) - y+6                                      }},
-            //     { favorite: true,  name: "bloop bloop bloop by @v21",                            func: -> (t, i, x, y) { (x-8)*(y-8) - sin(t)*64                                        }},
-            //     { favorite: true,  name: "fireworks by @p_malin and @aemkei",                    func: -> (t, i, x, y) { -0.4/(hypot(x-t%10,y-t%8)-t%2*9)                               }},
-            //     { favorite: true,  name: "ripples by @thespite",                                 func: -> (t, i, x, y) { sin(t-sqrt(x*x+y*y))                                           }},
-            //     { favorite: true,  name: "scrolling TIXY font by @atesgoral",                    func: -> (t, i, x, y) { [5463,2194,2386][y.to_i + (t*9).to_i & 7] & (1 << x-1)         }},
-            //     { favorite: true,  name: "3d checker board by @p_malin",                         func: -> (t, i, x, y) { y>0 && (((x-8) / y + t*5).to_i & 1 ^ (1/y*8).to_i & 1) * y / 5 }},
-            //     { favorite: false, name: "sticky blood by @joeytwiddle",                         func: -> (t, i, x, y) { y-t*3+9+3*cos(x*3-t)-5*sin(x*7)                                }},
-            //     { favorite: true,  name: "3d starfield by @p_malin",                             func: -> (t, i, x, y) { d=y*y%5.9+1;(((x+t*50/d).to_i&15).zero? ? 1/d : 0)             }},
-            //     { favorite: false, name: "dialogue with an alien by @chiptune",                  func: -> (t, i, x, y) { 1.0/32.0*tan(t/64.0*x*tan(i-x))                                }},
-            //     { favorite: true,  name: "space invader by @keithclarkcouk + @zozuar",           func: -> (t, i, x, y) { 'p}¶¼<¼¶}p'.codepoints[x] & 2**y.to_i                        }},
-            //     { favorite: true,  name: "hungry pac man by @p_malin and @aemkei",               func: -> (t, i, x, y) { hypot(x-=t%4*5,y-=8)<6 && (x<y || y<-x)                        }},
-            //     { favorite: false, name: "spectrum analyser by @joeytwiddle",                    func: -> (t, i, x, y) { x.to_i.even? && y < 9 && y > (4 + sin(8*t+x*x) + x / 4)        }},
-            //     { favorite: false, name: "diagonals",                                            func: -> (t, i, x, y) { y == x || ((15-x == y) ? -1 : 0 )                              }},
-            //     { favorite: false, name: "frame",                                                func: -> (t, i, x, y) { x==0 || x==15 || y==0 || y==15                                 }},
-            //     { favorite: true,  name: "drop",                                                 func: -> (t, i, x, y) { 8*t%13 - hypot(x-7.5, y-7.5)                                   }},
-            //     { favorite: true,  name: "rotation",                                             func: -> (t, i, x, y) { sin(2*atan((y-7.5)/(x-7.5))+5*t)                               }},
-            //     { favorite: true,  name: "wipe",                                                 func: -> (t, i, x, y) { (x-y) - sin(t) * 16                                            }},
-            //     { favorite: false, name: "soft wipe",                                            func: -> (t, i, x, y) { (x-y)/24 - sin(t)                                              }},
-            //     { favorite: false, name: "disco",                                                func: -> (t, i, x, y) { sin(t*5) * tan(t*7)                                            }},
-            //     { favorite: false, name: "input is limited to 32 characters!",                   func: -> (t, i, x, y) { (x-5)**2 + (y-5)**2 - 99*sin(t)                                }},
-
+            Pattern { favorite: false,    name: "default".to_string(),                                              func: |_t, _i, _x, _y| (_y / 8.0 + _t).sin(), },
+            Pattern { favorite: false,    name: "for every dot return 0 or 1 to change the visibility".to_string(), func: |_t, _i, _x, _y| if rand::random::<f32>() < 0.1 { 1.0 } else { 0.0 }, },
+            Pattern { favorite: false,    name: "use a float between 0 and 1 to define the size".to_string(),       func: |_t, _i, _x, _y| rand::random::<f32>(), },
+            Pattern { favorite: false,    name: "parameter `t` is the time in seconds".to_string(),                 func: |_t, _i, _x, _y| _t.sin(), },
+            Pattern { favorite: false,    name: "parameter `i` is the index of the dot (0..255)".to_string(),       func: |_t, _i, _x, _y| _i / 256.0, },
+            Pattern { favorite: false,    name: "`x` is the column index from 0 to 15".to_string(),                 func: |_t, _i, _x, _y| _x / 16.0, },
+            Pattern { favorite: false,    name: "`y` is the row also from 0 to 15".to_string(),                     func: |_t, _i, _x, _y| _y / 16.0, },
+            Pattern { favorite: false,    name: "positive numbers are white, negatives are red".to_string(),        func: |_t, _i, _x, _y| _y - 7.5, },
+            Pattern { favorite: false,    name: "use the time to animate values".to_string(),                       func: |_t, _i, _x, _y| _y - _t, },
+            Pattern { favorite: false,    name: "multiply the time to change the speed".to_string(),                func: |_t, _i, _x, _y| _y - _t * 4.0, },
+            Pattern { favorite: false,    name: "create PresetInfo using different color".to_string(),              func: |_t, _i, _x, _y| [1.0, 0.0, -1.0][(_i % 3.0) as usize], },
+            Pattern { favorite: true,     name: "skip `Math` to use methods".to_string(),                           func: |_t, _i, _x, _y| (_t - ((_x - 7.5).pow(2.0) + (_y - 6.0).pow(2.0)).sqrt()).sin(), },
+            Pattern { favorite: false,    name: "more examples".to_string(),                                        func: |_t, _i, _x, _y| (_y / 8.0 + _t).sin(), },
+            Pattern { favorite: false,    name: "simple triangle".to_string(),                                      func: |_t, _i, _x, _y| _y - _x, },
+            // Pattern { favorite: false, name: "quarter triangle".to_string(),                                     func: |_t, _i, _x, _y| { btoi((_y > _x) && btoi((14.0 - _x) < _y)) }, },
+            Pattern { favorite: false,    name: "pattern".to_string(),                                              func: |_t, _i, _x, _y| _i % 4.0 - _y % 4.0, },
+            Pattern { favorite: false,    name: "grid".to_string(),                                                 func: |_t, _i, _x, _y| if (_i % 4.0) > 0.0 && (_y % 4.0) > 0.0 { 1.0 } else { 0.0 }, },
+            Pattern { favorite: false,    name: "square".to_string(),                                               func: |_t, _i, _x, _y| if _x > 3.0 && _y > 3.0 && _x < 12.0 && _y < 12.0 { 1.0 } else { 0.0 }, },
+            Pattern { favorite: false,    name: "animated square".to_string(),                                      func: |_t, _i, _x, _y| if _x > _t && _y > _t && _x < 15.0 - _t && _y < 15.0 - _t { -1.0 } else { 0.0 }, },
+            Pattern { favorite: false,    name: "mondrian squares".to_string(),                                     func: |_t, _i, _x, _y| (_y - 6.0) * (_x - 6.0), },
+            Pattern { favorite: true,     name: "moving cross".to_string(),                                         func: |_t, _i, _x, _y| (_y - 4.0 * _t) * (_x - 2.0 - _t), },
+            Pattern { favorite: false,    name: "sierpinski".to_string(),                                           func: |_t, _i, _x, _y| if ((4.0 * _t) as isize & _i as isize & _x as isize & _y as isize) != 0 { 1.0 } else { 0.0 }, },
+            Pattern { favorite: false,    name: "binary clock".to_string(),                                         func: |_t, _i, _x, _y| if _y == 8.0 { if ((_t * 10.0) as isize & (1<<(_x as usize))) != 0 {1.0} else {0.0} } else { 0.0 }, },
+            Pattern { favorite: false,    name: "random noise".to_string(),                                         func: |_t, _i, _x, _y| rand::thread_rng().gen_range(-1.0..=1.0), },
+            Pattern { favorite: false,    name: "static smooth noise".to_string(),                                  func: |_t, _i, _x, _y| _i.pow(2.0).sin(), },
+            Pattern { favorite: true,     name: "animated smooth noise".to_string(),                                func: |_t, _i, _x, _y| (_t + _i + _x * _y).cos(), },
+            Pattern { favorite: true,     name: "waves".to_string(),                                                func: |_t, _i, _x, _y| (_x / 2.0).sin() - (_x - _t).sin() - _y + 6.0, },
+            Pattern { favorite: true,     name: "bloop bloop bloop by @v21".to_string(),                            func: |_t, _i, _x, _y| (_x - 8.0) * (_y - 8.0) - _t.sin() * 64.0, },            // Pattern { favorite: true,  name: "fireworks by @p_malin and @aemkei", func: |_t, _i, _x, _y| -0.4 / hypot(_x-_t % 10.0, _y-_t%8.0) - _t % 2.0 * 9.0, },
+            Pattern { favorite: true,     name: "ripples by @thespite".to_string(),                                 func: |_t, _i, _x, _y| (_t - (_x*_x+_y*_y).sqrt()).sin()                                           , },
+            // Pattern { favorite: true,  name: "scrolling TIXY font by @atesgoral".to_string(),                    func: |_t, _i, _x, _y| if ([5463,2194,2386][(_y as usize) + ((_t*9.0) as usize) & 7] & (1 << (_x as usize)-1)) != 0 { 1.0 } else { 0.0 }, },
+            // Pattern { favorite: true,  name: "3d checker board by @p_malin".to_string(),                         func: |_t, _i, _x, _y| _y > 0.0 && (((_x-8.0) / _y + _t*5.0) as usize & 1 ^ (1.0/_y*8.0) as usize & 1) * _y / 5.0, },
+            Pattern { favorite: false,    name: "sticky blood by @joeytwiddle".to_string(),                         func: |_t, _i, _x, _y| _y-_t*3.0+9.0+3.0* (_x*3.0-_t).cos() -5.0*(_x*7.0).sin(), },
+            // Pattern { favorite: true,  name: "3d starfield by @p_malin".to_string(),                             func: |_t, _i, _x, _y| d=_y*_y%5.9+1;(((_x+_t*50/d).to_i&15).zero? ? 1/d : 0)             , },
+            Pattern { favorite: false,    name: "dialogue with an alien by @chiptune".to_string(),                  func: |_t, _i, _x, _y| 1.0 / 32.0 * (_t/64.0*_x*(_i-_x).tan()).tan(), },
+            // Pattern { favorite: true,  name: "space invader by @keithclarkcouk + @zozuar".to_string(),           func: |_t, _i, _x, _y| 'p}¶¼<¼¶}p'.codepoints[_x] & 2**_y.to_i                        , },
+            // Pattern { favorite: true,  name: "hungry pac man by @p_malin and @aemkei".to_string(),               func: |_t, _i, _x, _y| hypot(_x-=_t%4*5,_y-=8)<6 && (_x<_y || _y<-_x)                        , },
+            // Pattern { favorite: false, name: "spectrum analyser by @joeytwiddle".to_string(),                    func: |_t, _i, _x, _y| _x.to_i.even? && _y < 9 && _y > (4 + sin(8*_t+_x*_x) + _x / 4)        , },
+            // Pattern { favorite: false, name: "diagonals".to_string(),                                            func: |_t, _i, _x, _y| _y == _x || ((15-_x == _y) ? -1 : 0 )                              , },
+            // Pattern { favorite: false, name: "frame".to_string(),                                                func: |_t, _i, _x, _y| _x==0 || _x==15 || _y==0 || _y==15                                 , },
+            // Pattern { favorite: true,  name: "drop".to_string(),                                                 func: |_t, _i, _x, _y| 8*_t%13 - hypot(_x-7.5, _y-7.5)                                   , },
+            Pattern { favorite: true,     name: "rotation".to_string(),                                             func: |_t, _i, _x, _y| (2.0*((_y-7.5)/(_x-7.5)).atan() + 5.0 * _t).sin(), },
+            Pattern { favorite: true,     name: "wipe".to_string(),                                                 func: |_t, _i, _x, _y| (_x-_y) - _t.sin() * 16.0, },
+            Pattern { favorite: false,    name: "soft wipe".to_string(),                                            func: |_t, _i, _x, _y| (_x-_y) / 24.0 - _t.sin(), },
+            Pattern { favorite: false,    name: "disco".to_string(),                                                func: |_t, _i, _x, _y| (_t*5.0).sin() * (_t*7.0).tan(), },
+            Pattern { favorite: false,    name: "input is limited to 32 characters!".to_string(),                   func: |_t, _i, _x, _y| (_x - 5.0).pow(2.0) + (_y - 5.0).pow(2.0) - 99.0 * _t.sin(), },
         ],
     };
 
@@ -190,55 +156,55 @@ fn model(app: &App) -> Model {
 fn event(app: &App, model: &mut Model, event: Event) {
     if let Event::WindowEvent { simple: Some(KeyPressed(key)), .. } = event {
         match key {
-            Key::Z => model.preset_change(1),
-            Key::X => model.preset_change(-1),
+            Key::Z => model.preset_change(&app, 1),
+            Key::X => model.preset_change(&app, -1),
             Key::Q => app.quit(),
             _ => {},
         }
     }
 }
 
-fn mouse_pressed(_app: &App, model: &mut Model, button: MouseButton) {
+fn mouse_pressed(app: &App, model: &mut Model, button: MouseButton) {
     match button {
-        MouseButton::Left  => { model.preset_change(1)  },
-        MouseButton::Right => { model.preset_change(-1) },
+        MouseButton::Left  => { model.preset_change(&app, 1)  },
+        MouseButton::Right => { model.preset_change(&app, -1) },
         _ => {},
     }
 }
 
 fn update(app: &App, model: &mut Model, _update: Update) {
-    // let win = app.window_rect();
-    // if model.counter == 0 {
     model.view_rect    = app.window_rect().pad(PADDING);
     model.cell_wh      = model.view_rect.wh() * ((1.0 / SIDE_N) * VIEW_SIZE_RATE); // 画面の大きさから1つのセルのサイズを求める
     model.half_cell_wh = model.cell_wh * 0.5 * vec2(1.0, -1.0);                 // 扱いやすいように半分バージョンも作っておく
-    // }
 
-    if app.keys.down.contains(&Key::Return) {
-        model.preset_change(1);
+    if false {
+        if app.keys.down.contains(&Key::Return) {
+            model.preset_change(&app, 1);
+        }
     }
 
     // app.keys.down
-    //     if frame.nth() == 0 || app.keys.down.contains(&Key::R) {
+    //     if frame.nth() == 0 func: || app.keys.down.contains(&Key::R) { },
     //     draw.background().color(BLACK);
     // }
+
     model.counter += 1;
+    // model.start_time += 1;
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
 
-    draw.background().color(BLACK);
-    // frame.clear(BLACK);
+    // draw.background().color(BLACK);
+    frame.clear(BLACK);
 
-    let mut cell_index = 0;
-
-    let idx = model.selected_index as usize % model.patterns.len();
-    let func = model.patterns[idx as usize];
+    let mut i = 0.0;
+    let t = app.time - model.start_time;
+    let pattern = model.current_pattern();
     for y in 0..SIDE_N as usize {
         for x in 0..SIDE_N as usize {
             let xy = vec2(x as f32, y as f32);
-            let retval = func(app.time, cell_index as f32, xy.x, xy.y);
+            let retval = (pattern.func)(t, i, xy.x, xy.y);
             if retval != 0.0 {
                 let retval = retval.clamp(-1.0, 1.0);
                 let v = model.cell_wh * xy * vec2(1.0, -1.0); // セルの右上
@@ -248,7 +214,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
                 let diameter = model.cell_diameter(retval);   // 直径
                 draw.rect().xy(v).wh(diameter).color(color);  // xy は右上ではなく中心の座標(使いやすい)
             }
-            cell_index += 1;
+            i += 1.0;
         }
     }
 
@@ -258,7 +224,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
         .xy(r.xy())
         .wh(r.wh())
         .rgba(0.0, 0.0, 0.0, 0.9);
-    let text = format!("{} {} FPS:{:.0}", model.counter, frame.nth(), app.fps());
+    let text = format!("{} {} {:.2} FPS:{:.0} {}", model.counter, frame.nth(), app.time, app.fps(), model.current_pattern().name);
     draw.text(&text)
         .xy(r.xy())
         .wh(r.wh())
