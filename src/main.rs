@@ -159,7 +159,7 @@ fn model(app: &App) -> Model {
                 name: "skip `Math` to use methods".to_string(),
                 favorite: true,
                 func: |_t, _i, _x, _y| {
-                    (_t - ((_x - 7.5).pow(2.0) + (_y - 6.0).pow(2.0)).sqrt()).sin()
+                    (_t - ((_x - 7.5).powi(2) + (_y - 6.0).powi(2)).sqrt()).sin()
                 },
             },
             Pattern {
@@ -259,7 +259,7 @@ fn model(app: &App) -> Model {
             Pattern {
                 name: "static smooth noise".to_string(),
                 favorite: false,
-                func: |_t, _i, _x, _y| _i.pow(2.0).sin(),
+                func: |_t, _i, _x, _y| _i.powi(2).sin(),
             },
             Pattern {
                 name: "animated smooth noise".to_string(),
@@ -368,7 +368,7 @@ fn model(app: &App) -> Model {
             // Pattern {
             //     name: "input is limited to 32 characters!".to_string(),
             //     favorite: false,
-            //     func: |_t, _i, _x, _y| (_x - 5.0).pow(2.0) + (_y - 5.0).pow(2.0) - 99.0 * _t.sin(),
+            //     func: |_t, _i, _x, _y| (_x - 5.0).powi(2) + (_y - 5.0).powi(2) - 99.0 * _t.sin(),
             // },
         ],
     };
