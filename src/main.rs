@@ -315,14 +315,25 @@ fn model(app: &App) -> Model {
                     }
                 },
             },
-            // Pattern {
-            //     name: "sticky blood by @joeytwiddle".to_string(),
-            //     favorite: false,
-            //     func: |_t, _i, _x, _y| {
-            //         _y - _t * 3.0 + 9.0 + 3.0 * (_x * 3.0 - _t).cos() - 5.0 * (_x * 7.0).sin()
-            //     },
-            // },
-            // // Pattern { favorite: true,  name: "3d starfield by @p_malin".to_string(),                             func: |_t, _i, _x, _y| d=_y*_y%5.9+1;(((_x+_t*50/d).to_i&15).zero? ? 1/d : 0)             , },
+            Pattern {
+                name: "sticky blood by @joeytwiddle".to_string(),
+                favorite: false,
+                func: |_t, _i, _x, _y| {
+                    _y - _t * 3.0 + 9.0 + 3.0 * (_x * 3.0 - _t).cos() - 5.0 * (_x * 7.0).sin()
+                },
+            },
+            Pattern {
+                favorite: true,
+                name: "3d starfield by @p_malin".to_string(),
+                func: |_t, _i, _x, _y| {
+                    let d = _y * _y % 5.9 + 1.0;
+                    if ((_x + _t * 50.0 / d) as usize & 15) == 0 {
+                        1.0 / d
+                    } else {
+                        0.0
+                    }
+                },
+            },
             // Pattern {
             //     name: "dialogue with an alien by @chiptune".to_string(),
             //     favorite: false,
