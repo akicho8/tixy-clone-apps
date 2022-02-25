@@ -3,7 +3,7 @@ const SIDE_N: f32 = 16.0; // 辺のセル個数
 const COLOR_MAX: i32 = 255; // 色の要素の最大
 const DIAMETER_RATE: f32 = 0.9; // セルの辺の最大値(比率)
 const PADDING: f32 = 16.0; // 余白
-                           // const FPS: u32             = 60;  // 決め打ち
+const DEBUG_MODE: bool = true; // 画面上の情報
 
 const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 480;
@@ -19,13 +19,12 @@ struct Pattern {
 }
 
 struct Model {
-    view_rect: Rect,
-    cell_wh: Vec2,
-    half_cell_wh: Vec2,
-    counter: usize,
-    start_time: f32,
-    selected_index: isize,
-    patterns: Vec<Pattern>,
+    view_rect: Rect,        // 表示領域
+    cell_wh: Vec2,          // 一つのセルの縦横
+    counter: usize,         // 表示カウンタ
+    start_time: f32,        // 切り替えた時点の時間
+    selected_index: isize,  // patterns の index
+    patterns: Vec<Pattern>, // いろんな式を入れとく
 }
 
 impl Model {
@@ -93,7 +92,6 @@ fn model(app: &App) -> Model {
     let mut model = Model {
         view_rect: Rect::from_w_h(0.0, 0.0),
         cell_wh: Vec2::ZERO,
-        half_cell_wh: Vec2::ZERO,
         counter: 0,
         start_time: 0.0,
         selected_index: 0,
@@ -459,8 +457,8 @@ fn event(app: &App, model: &mut Model, event: Event) {
             Key::Right => model.preset_change(&app, 1),
             Key::R => model.preset_change(&app, 0),
             Key::Q => app.quit(),
-            Key::Key3 => app.set_loop_mode(LoopMode::rate_fps(30.0)), // 動かない
-            Key::Key6 => app.set_loop_mode(LoopMode::rate_fps(60.0)),
+            Key::Key3 => app.set_loop_mode(LoopMode::rate_fps(30.0)), // 効いてない
+            Key::Key6 => app.set_loop_mode(LoopMode::rate_fps(60.0)), // 効いてない
             _ => {}
         }
     }
@@ -477,29 +475,13 @@ fn mouse_pressed(app: &App, model: &mut Model, button: MouseButton) {
 fn update(app: &App, model: &mut Model, _update: Update) {
     model.view_rect = app.window_rect().pad(PADDING);
     model.cell_wh = model.view_rect.wh() / SIDE_N; // 画面の大きさから1つのセルのサイズを求める
-    model.half_cell_wh = model.cell_wh * vec2(0.5, -0.5); // 扱いやすいように半分バージョンも作っておく
-
-    if false {
-        if app.keys.down.contains(&Key::Return) {
-            model.preset_change(&app, 1);
-        }
-    }
-
-    // app.keys.down
-    //     if frame.nth() == 0 func: || app.keys.down.contains(&Key::R) { },
-    //     draw.background().color(BLACK);
-    // }
-
     model.counter += 1;
-    // model.start_time += 1;
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
-    let draw = app.draw();
-
-    // draw.background().color(BLACK);
     frame.clear(BLACK);
 
+    let draw = app.draw();
     let mut i = 0.0;
     let t = app.time - model.start_time;
     let pattern = model.current_pattern();
@@ -511,7 +493,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
                 let retval = retval.clamp(-1.0, 1.0);
                 let v = model.cell_wh * xy * vec2(1.0, -1.0); // セルの右上
                 let v = model.view_rect.top_left() + v; // セルの集合の右上を足す
-                let v = v + model.half_cell_wh; // セルの中心
+                let v = v + model.cell_wh * vec2(0.5, -0.5); // セルの中心に移動
                 let color = model.retval_to_color(retval);
                 let diameter = model.cell_diameter(retval); // 直径
                 draw.rect().xy(v).wh(diameter).color(color); // xy は右上ではなく中心の座標(使いやすい)
@@ -520,24 +502,26 @@ fn view(app: &App, model: &Model, frame: Frame) {
         }
     }
 
-    let win = app.window_rect();
-    let r = Rect::from_w_h(win.w(), 15.0).top_left_of(win.pad(0.0));
-    draw.rect().xy(r.xy()).wh(r.wh()).rgba(0.0, 0.0, 0.0, 0.9);
-    let text = format!(
-        "{} {} {:.2} FPS:{:.0} {} {}",
-        model.counter,
-        frame.nth(),
-        app.time,
-        app.fps(),
-        model.selected_index,
-        model.current_pattern().name,
-    );
-    draw.text(&text)
-        .xy(r.xy())
-        .wh(r.wh())
-        .left_justify()
-        .align_text_top()
-        .color(WHITE);
+    if DEBUG_MODE {
+        let win = app.window_rect();
+        let r = Rect::from_w_h(win.w(), 15.0).top_left_of(win.pad(0.0));
+        draw.rect().xy(r.xy()).wh(r.wh()).rgba(0.0, 0.0, 0.0, 0.9);
+        let text = format!(
+            "{} {} {:.2} FPS:{:.0} {} {}",
+            model.counter,
+            frame.nth(),
+            app.time,
+            app.fps(),
+            model.selected_index,
+            model.current_pattern().name,
+        );
+        draw.text(&text)
+            .xy(r.xy())
+            .wh(r.wh())
+            .left_justify()
+            .align_text_top()
+            .color(WHITE);
+    }
 
     draw.to_frame(app, &frame).unwrap();
 }
