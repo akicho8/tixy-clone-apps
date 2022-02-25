@@ -102,6 +102,8 @@ fn model(app: &App) -> Model {
         .build()
         .unwrap();
 
+    app.main_window().set_title("tixy Rust clone using nannou");
+
     let mut model = Model {
         view_rect: Rect::from_w_h(0.0, 0.0),
         cell_wh: Vec2::ZERO,
