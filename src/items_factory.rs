@@ -1,6 +1,6 @@
-use rand::Rng;
 use crate::bool_to_float;
 use crate::Item;
+use rand::Rng;
 
 pub fn items_factory() -> Vec<Item> {
     return vec![

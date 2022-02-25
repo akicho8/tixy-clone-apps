@@ -31,7 +31,7 @@ struct Model {
     view_rect: Rect,       // 表示領域
     cell_wh: Vec2,         // 一つのセルの縦横
     start_time: f32,       // 切り替えた時点の時間
-    favorite_only: bool,            // お気に入りだけ
+    favorite_only: bool,   // お気に入りだけ
     selected_index: isize, // items の index
     items: Vec<Item>,      // いろんな式を入れとく
 }
@@ -52,7 +52,10 @@ impl Model {
         self.items = items_factory::items_factory();
         self.selected_index = 0;
         if self.favorite_only {
-            self.items = items_factory::items_factory().into_iter().filter(|e| e.favorite).collect();
+            self.items = items_factory::items_factory()
+                .into_iter()
+                .filter(|e| e.favorite)
+                .collect();
         }
     }
 
