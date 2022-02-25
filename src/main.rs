@@ -28,29 +28,29 @@ pub fn bool_to_float(v: bool) -> f32 {
 mod items_factory;
 
 struct Model {
-    view_rect: Rect,       // 表示領域
-    cell_wh: Vec2,         // 一つのセルの縦横
-    start_time: f32,       // 切り替えた時点の時間
-    favorite_only: bool,   // お気に入りだけ
-    selected_index: isize, // items の index
-    items: Vec<Item>,      // いろんな式を入れとく
+    view_rect: Rect,     // 表示領域
+    cell_wh: Vec2,       // 一つのセルの縦横
+    start_time: f32,     // 切り替えた時点の時間
+    favorite_only: bool, // お気に入りだけ
+    item_index: isize,   // items の index
+    items: Vec<Item>,    // いろんな式を入れとく
 }
 
 impl Model {
     fn current_item(&self) -> &Item {
-        &self.items[self.selected_index as usize]
+        &self.items[self.item_index as usize]
     }
 
     fn preset_change(&mut self, app: &App, sign: isize) {
-        self.selected_index = self.items.len() as isize + self.selected_index + sign;
-        self.selected_index %= self.items.len() as isize;
+        self.item_index = self.items.len() as isize + self.item_index + sign;
+        self.item_index %= self.items.len() as isize;
         self.start_time = app.time;
     }
 
     fn favorite_only_toggle(&mut self) {
         self.favorite_only = !self.favorite_only;
         self.items = items_factory::items_factory();
-        self.selected_index = 0;
+        self.item_index = 0;
         if self.favorite_only {
             self.items = items_factory::items_factory()
                 .into_iter()
@@ -109,11 +109,11 @@ fn model(app: &App) -> Model {
         cell_wh: Vec2::ZERO,
         start_time: 0.0,
         favorite_only: false,
-        selected_index: 0,
+        item_index: 0,
         items: items_factory::items_factory(),
     };
 
-    model.selected_index = (model.items.len() - 1) as isize;
+    model.item_index = (model.items.len() - 1) as isize;
     model
 }
 
@@ -184,7 +184,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
             frame.nth(),
             app.time,
             app.fps(),
-            model.selected_index,
+            model.item_index,
             model.current_item().name,
         );
         draw.text(&text)
