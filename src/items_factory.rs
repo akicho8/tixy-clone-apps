@@ -75,8 +75,8 @@ pub fn items_factory() -> Vec<Item> {
             func: |_t, _i, _x, _y| _y - _x,
         },
         Item {
-            favorite: false,
             name: "quarter triangle",
+            favorite: false,
             func: |_t, _i, _x, _y| bool_to_float((_y > _x) && ((14.0 - _x) < _y)),
         },
         Item {
@@ -189,8 +189,8 @@ pub fn items_factory() -> Vec<Item> {
             func: |_t, _i, _x, _y| (_t - (_x * _x + _y * _y).sqrt()).sin(),
         },
         Item {
-            favorite: true,
             name: "3d checker board by @p_malin",
+            favorite: true,
             func: |_t, _i, _x, _y| {
                 if _y > 0.0 {
                     (((_x - 8.0) / _y + _t * 5.0) as usize & 1 ^ (1.0 / _y * 8.0) as usize & 1)
@@ -228,8 +228,8 @@ pub fn items_factory() -> Vec<Item> {
             },
         },
         Item {
-            favorite: true,
             name: "3d starfield by @p_malin",
+            favorite: true,
             func: |_t, _i, _x, _y| {
                 let d = _y * _y % 5.9 + 1.0;
                 if ((_x + _t * 50.0 / d) as usize & 15) == 0 {
