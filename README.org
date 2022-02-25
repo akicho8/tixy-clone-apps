@@ -1,4 +1,4 @@
-* TIXY Rust clone using nannou
+* Tixy Rust clone using nannou
 
   Original: https://tixy.land/
 
