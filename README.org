@@ -1,3 +1,9 @@
 * TIXY Rust clone using nannou
 
   Original: https://tixy.land/
+
+  [[https://raw.github.com/akicho8/tixy_rust_clone_using_nannou/master/image.png]]
+
+#+BEGIN_SRC shell
+cargo run
+#+END_SRC
