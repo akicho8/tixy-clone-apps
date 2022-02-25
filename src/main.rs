@@ -10,32 +10,50 @@ const SCREEN_HEIGHT: u32 = 480;
 
 use nannou::geom::Rect;
 use nannou::prelude::*;
-use rand::Rng;
 
-struct Pattern {
-    favorite: bool,
+pub struct Item {
     name: &'static str,
+    favorite: bool,
     func: fn(f32, f32, f32, f32) -> f32,
 }
 
+pub fn bool_to_float(v: bool) -> f32 {
+    if v {
+        1.0
+    } else {
+        0.0
+    }
+}
+
+mod items_factory;
+
 struct Model {
-    view_rect: Rect,        // 表示領域
-    cell_wh: Vec2,          // 一つのセルの縦横
-    counter: usize,         // 表示カウンタ
-    start_time: f32,        // 切り替えた時点の時間
-    selected_index: isize,  // patterns の index
-    patterns: Vec<Pattern>, // いろんな式を入れとく
+    view_rect: Rect,       // 表示領域
+    cell_wh: Vec2,         // 一つのセルの縦横
+    start_time: f32,       // 切り替えた時点の時間
+    favorite_only: bool,            // お気に入りだけ
+    selected_index: isize, // items の index
+    items: Vec<Item>,      // いろんな式を入れとく
 }
 
 impl Model {
-    fn current_pattern(&self) -> &Pattern {
-        &self.patterns[self.selected_index as usize]
+    fn current_item(&self) -> &Item {
+        &self.items[self.selected_index as usize]
     }
 
     fn preset_change(&mut self, app: &App, sign: isize) {
-        self.selected_index = (self.patterns.len() as isize + self.selected_index + sign)
-            % self.patterns.len() as isize;
+        self.selected_index = self.items.len() as isize + self.selected_index + sign;
+        self.selected_index %= self.items.len() as isize;
         self.start_time = app.time;
+    }
+
+    fn favorite_only_toggle(&mut self) {
+        self.favorite_only = !self.favorite_only;
+        self.items = items_factory::items_factory();
+        self.selected_index = 0;
+        if self.favorite_only {
+            self.items = items_factory::items_factory().into_iter().filter(|e| e.favorite).collect();
+        }
     }
 
     // 長方形の辺の比率を返す
@@ -64,16 +82,8 @@ impl Model {
         if v > 0.0 {
             rgb8(c, c, c)
         } else {
-            rgb8(0, c, (c as f32 * 0.8) as u8)
+            rgb8((c as f32 * 0.8) as u8, 0, c)
         }
-    }
-}
-
-fn btof(v: bool) -> f32 {
-    if v {
-        1.0
-    } else {
-        0.0
     }
 }
 
@@ -92,355 +102,13 @@ fn model(app: &App) -> Model {
     let mut model = Model {
         view_rect: Rect::from_w_h(0.0, 0.0),
         cell_wh: Vec2::ZERO,
-        counter: 0,
         start_time: 0.0,
+        favorite_only: false,
         selected_index: 0,
-        patterns: vec![
-            Pattern {
-                name: "default",
-                favorite: false,
-                func: |_t, _i, _x, _y| (_y / 8.0 + _t).sin(),
-            },
-            Pattern {
-                name: "for every dot return 0 or 1 to change the visibility",
-                favorite: false,
-                func: |_t, _i, _x, _y| btof(rand::random::<f32>() < 0.1),
-            },
-            Pattern {
-                name: "use a float between 0 and 1 to define the size",
-                favorite: false,
-                func: |_t, _i, _x, _y| rand::random::<f32>(),
-            },
-            Pattern {
-                name: "parameter `t` is the time in seconds",
-                favorite: false,
-                func: |_t, _i, _x, _y| _t.sin(),
-            },
-            Pattern {
-                name: "parameter `i` is the index of the dot (0..255)",
-                favorite: false,
-                func: |_t, _i, _x, _y| _i / 256.0,
-            },
-            Pattern {
-                name: "`x` is the column index from 0 to 15",
-                favorite: false,
-                func: |_t, _i, _x, _y| _x / 16.0,
-            },
-            Pattern {
-                name: "`y` is the row also from 0 to 15",
-                favorite: false,
-                func: |_t, _i, _x, _y| _y / 16.0,
-            },
-            Pattern {
-                name: "positive numbers are white, negatives are red",
-                favorite: false,
-                func: |_t, _i, _x, _y| _y - 7.5,
-            },
-            Pattern {
-                name: "use the time to animate values",
-                favorite: false,
-                func: |_t, _i, _x, _y| _y - _t,
-            },
-            Pattern {
-                name: "multiply the time to change the speed",
-                favorite: false,
-                func: |_t, _i, _x, _y| _y - _t * 4.0,
-            },
-            Pattern {
-                name: "create PresetInfo using different color",
-                favorite: false,
-                func: |_t, _i, _x, _y| [1.0, 0.0, -1.0][(_i % 3.0) as usize],
-            },
-            Pattern {
-                name: "pow, sqrt example",
-                favorite: true,
-                func: |_t, _i, _x, _y| {
-                    (_t - ((_x - 7.5).powi(2) + (_y - 6.0).powi(2)).sqrt()).sin()
-                },
-            },
-            Pattern {
-                name: "more examples",
-                favorite: false,
-                func: |_t, _i, _x, _y| (_y / 8.0 + _t).sin(),
-            },
-            Pattern {
-                name: "simple triangle",
-                favorite: false,
-                func: |_t, _i, _x, _y| _y - _x,
-            },
-            Pattern {
-                favorite: false,
-                name: "quarter triangle",
-                func: |_t, _i, _x, _y| btof((_y > _x) && ((14.0 - _x) < _y)),
-            },
-            Pattern {
-                name: "pattern",
-                favorite: false,
-                func: |_t, _i, _x, _y| _i % 4.0 - _y % 4.0,
-            },
-            Pattern {
-                name: "grid",
-                favorite: false,
-                func: |_t, _i, _x, _y| {
-                    if (_i % 4.0) > 0.0 && (_y % 4.0) > 0.0 {
-                        1.0
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "square",
-                favorite: false,
-                func: |_t, _i, _x, _y| {
-                    if _x > 3.0 && _y > 3.0 && _x < 12.0 && _y < 12.0 {
-                        1.0
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "animated square",
-                favorite: false,
-                func: |_t, _i, _x, _y| {
-                    if _x > _t && _y > _t && _x < 15.0 - _t && _y < 15.0 - _t {
-                        -1.0
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "mondrian squares",
-                favorite: false,
-                func: |_t, _i, _x, _y| (_y - 6.0) * (_x - 6.0),
-            },
-            Pattern {
-                name: "moving cross",
-                favorite: true,
-                func: |_t, _i, _x, _y| (_y - 4.0 * _t) * (_x - 2.0 - _t),
-            },
-            Pattern {
-                name: "sierpinski",
-                favorite: false,
-                func: |_t, _i, _x, _y| {
-                    if ((4.0 * _t) as isize & _i as isize & _x as isize & _y as isize) != 0 {
-                        1.0
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "binary clock",
-                favorite: false,
-                func: |_t, _i, _x, _y| {
-                    if _y == 8.0 {
-                        if ((_t * 10.0) as isize & (1 << (_x as usize))) != 0 {
-                            1.0
-                        } else {
-                            0.0
-                        }
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "random noise",
-                favorite: false,
-                func: |_t, _i, _x, _y| rand::thread_rng().gen_range(-1.0..=1.0),
-            },
-            Pattern {
-                name: "static smooth noise",
-                favorite: false,
-                func: |_t, _i, _x, _y| _i.powi(2).sin(),
-            },
-            Pattern {
-                name: "animated smooth noise",
-                favorite: true,
-                func: |_t, _i, _x, _y| (_t + _i + _x * _y).cos(),
-            },
-            Pattern {
-                name: "waves",
-                favorite: true,
-                func: |_t, _i, _x, _y| (_x / 2.0).sin() - (_x - _t).sin() - _y + 6.0,
-            },
-            Pattern {
-                name: "bloop bloop bloop by @v21",
-                favorite: true,
-                func: |_t, _i, _x, _y| (_x - 8.0) * (_y - 8.0) - _t.sin() * 64.0,
-            },
-            Pattern {
-                name: "fireworks by @p_malin and @aemkei",
-                favorite: true,
-                func: |_t, _i, _x, _y| {
-                    -0.4 / ((_x - _t % 10.0).hypot(_y - _t % 8.0) - _t % 2.0 * 9.0)
-                },
-            },
-            Pattern {
-                name: "ripples by @thespite",
-                favorite: true,
-                func: |_t, _i, _x, _y| (_t - (_x * _x + _y * _y).sqrt()).sin(),
-            },
-            Pattern {
-                favorite: true,
-                name: "3d checker board by @p_malin",
-                func: |_t, _i, _x, _y| {
-                    if _y > 0.0 {
-                        (((_x - 8.0) / _y + _t * 5.0) as usize & 1 ^ (1.0 / _y * 8.0) as usize & 1)
-                            as f32
-                            * _y
-                            / 5.0
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "scrolling TIXY font by @atesgoral",
-                favorite: true,
-                func: |_t, _i, _x, _y| {
-                    let x = _x as usize;
-                    let y = _y as usize;
-                    let pos = y + ((_t * 9.0) as usize);
-                    if let Some(v) = [5463, 2194, 2386].get(pos & 7) {
-                        if (v & (1 << x)) != 0 {
-                            1.0
-                        } else {
-                            0.0
-                        }
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "sticky blood by @joeytwiddle",
-                favorite: false,
-                func: |_t, _i, _x, _y| {
-                    _y - _t * 3.0 + 9.0 + 3.0 * (_x * 3.0 - _t).cos() - 5.0 * (_x * 7.0).sin()
-                },
-            },
-            Pattern {
-                favorite: true,
-                name: "3d starfield by @p_malin",
-                func: |_t, _i, _x, _y| {
-                    let d = _y * _y % 5.9 + 1.0;
-                    if ((_x + _t * 50.0 / d) as usize & 15) == 0 {
-                        1.0 / d
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "dialogue with an alien by @chiptune",
-                favorite: false,
-                func: |_t, _i, _x, _y| 1.0 / 32.0 * (_t / 64.0 * _x * (_i - _x).tan()).tan(),
-            },
-            Pattern {
-                name: "space invader by @keithclarkcouk + @zozuar",
-                favorite: true,
-                func: |_t, _i, _x, _y| {
-                    // if let Some(ch) = "p}¶¼<¼¶}p".get(_x as usize) {
-                    //     println!("{:?}", ch);
-                    // }
-                    1.0
-
-                    // if ("p}¶¼<¼¶}p"[_x as usize] & 2.pow(_y)) != 0 {
-                    //     1.0
-                    // } else {
-                    //     0.0
-                    // }
-                },
-            },
-            Pattern {
-                name: "hungry pac man by @p_malin and @aemkei",
-                favorite: true,
-                func: |_t, _i, _x, _y| {
-                    let x = _x - _t % 4.0 * 5.0;
-                    let y = _y - 8.0;
-                    if x.hypot(y) < 6.0 && (x < y || y < -x) {
-                        1.0
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "spectrum analyser by @joeytwiddle",
-                favorite: false,
-                func: |_t, _i, _x, _y| {
-                    if (_x as usize) % 2 == 0
-                        && _y < 9.0
-                        && _y > (4.0 + (8.0 * _t + _x * _x).sin() + _x / 4.0)
-                    {
-                        1.0
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "diagonals",
-                favorite: false,
-                func: |_t, _i, _x, _y| {
-                    if _y == _x {
-                        1.0
-                    } else if 15.0 - _x == _y {
-                        -1.0
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "frame",
-                favorite: false,
-                func: |_t, _i, _x, _y| {
-                    if _x == 0.0 || _x == 15.0 || _y == 0.0 || _y == 15.0 {
-                        1.0
-                    } else {
-                        0.0
-                    }
-                },
-            },
-            Pattern {
-                name: "drop",
-                favorite: true,
-                func: |_t, _i, _x, _y| 8.0 * _t % 13.0 - (_x - 7.5).hypot(_y - 7.5),
-            },
-            Pattern {
-                name: "rotation",
-                favorite: true,
-                func: |_t, _i, _x, _y| (2.0 * ((_y - 7.5) / (_x - 7.5)).atan() + 5.0 * _t).sin(),
-            },
-            Pattern {
-                name: "wipe",
-                favorite: true,
-                func: |_t, _i, _x, _y| (_x - _y) - _t.sin() * 16.0,
-            },
-            Pattern {
-                name: "soft wipe",
-                favorite: false,
-                func: |_t, _i, _x, _y| (_x - _y) / 24.0 - _t.sin(),
-            },
-            Pattern {
-                name: "disco",
-                favorite: false,
-                func: |_t, _i, _x, _y| (_t * 5.0).sin() * (_t * 7.0).tan(),
-            },
-            Pattern {
-                name: "input is limited to 32 characters!",
-                favorite: false,
-                func: |_t, _i, _x, _y| (_x - 5.0).powi(2) + (_y - 5.0).powi(2) - 99.0 * _t.sin(),
-            },
-        ],
+        items: items_factory::items_factory(),
     };
 
-    model.selected_index = (model.patterns.len() - 1) as isize;
+    model.selected_index = (model.items.len() - 1) as isize;
     model
 }
 
@@ -455,6 +123,7 @@ fn event(app: &App, model: &mut Model, event: Event) {
             Key::X => model.preset_change(&app, -1),
             Key::Left => model.preset_change(&app, -1),
             Key::Right => model.preset_change(&app, 1),
+            Key::F => model.favorite_only_toggle(),
             Key::R => model.preset_change(&app, 0),
             Key::Q => app.quit(),
             Key::Key3 => app.set_loop_mode(LoopMode::rate_fps(30.0)), // 効いてない
@@ -475,7 +144,6 @@ fn mouse_pressed(app: &App, model: &mut Model, button: MouseButton) {
 fn update(app: &App, model: &mut Model, _update: Update) {
     model.view_rect = app.window_rect().pad(PADDING);
     model.cell_wh = model.view_rect.wh() / SIDE_N; // 画面の大きさから1つのセルのサイズを求める
-    model.counter += 1;
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
@@ -484,11 +152,11 @@ fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
     let mut i = 0.0;
     let t = app.time - model.start_time;
-    let pattern = model.current_pattern();
+    let item = model.current_item();
     for y in 0..SIDE_N as usize {
         for x in 0..SIDE_N as usize {
             let xy = vec2(x as f32, y as f32);
-            let retval = (pattern.func)(t, i, xy.x, xy.y);
+            let retval = (item.func)(t, i, xy.x, xy.y);
             if retval != 0.0 {
                 let retval = retval.clamp(-1.0, 1.0);
                 let v = model.cell_wh * xy * vec2(1.0, -1.0); // セルの右上
@@ -507,13 +175,12 @@ fn view(app: &App, model: &Model, frame: Frame) {
         let r = Rect::from_w_h(win.w(), 15.0).top_left_of(win.pad(0.0));
         draw.rect().xy(r.xy()).wh(r.wh()).rgba(0.0, 0.0, 0.0, 0.9);
         let text = format!(
-            "{} {} {:.2} FPS:{:.0} {} {}",
-            model.counter,
+            "{} {:.2} FPS:{:.0} {} {}",
             frame.nth(),
             app.time,
             app.fps(),
             model.selected_index,
-            model.current_pattern().name,
+            model.current_item().name,
         );
         draw.text(&text)
             .xy(r.xy())

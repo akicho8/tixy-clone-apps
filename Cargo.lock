@@ -1929,7 +1929,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tixy_rust_clone_using_nannno"
+name = "tixy_rust_clone_using_nannou"
 version = "0.1.0"
 dependencies = [
  "nannou",
