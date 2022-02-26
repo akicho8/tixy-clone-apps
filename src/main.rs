@@ -1,11 +1,11 @@
-const GRADATION_MODE: bool = false; // グラデーションにするか？
 const SIDE_N: f32 = 16.0; // 辺のセル個数
 const COLOR_MAX: i32 = 255; // 色の要素の最大
 const DIAMETER_RATE: f32 = 0.9; // セルの辺の最大値(比率)
 const PADDING: f32 = 16.0; // 余白
 const DEBUG_MODE: bool = true; // 画面上の情報
+const GRADATION_MODE: bool = false; // グラデーションにするか？
 
-const SCREEN_WIDTH: u32 = 640;
+const SCREEN_WIDTH: u32 = 480;
 const SCREEN_HEIGHT: u32 = 480;
 
 use nannou::geom::Rect;
@@ -15,14 +15,6 @@ pub struct Item {
     name: &'static str,
     favorite: bool,
     func: fn(f32, f32, f32, f32) -> f32,
-}
-
-pub fn bool_to_float(v: bool) -> f32 {
-    if v {
-        1.0
-    } else {
-        0.0
-    }
 }
 
 mod items_factory;

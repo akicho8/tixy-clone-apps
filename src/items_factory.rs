@@ -1,17 +1,16 @@
-use crate::bool_to_float;
-use crate::Item;
+use super::*;
 use rand::Rng;
 
 pub fn items_factory() -> Vec<Item> {
     return vec![
         Item {
             name: "default",
-            favorite: false,
+            favorite: true,
             func: |_t, _i, _x, _y| (_y / 8.0 + _t).sin(),
         },
         Item {
             name: "for every dot return 0 or 1 to change the visibility",
-            favorite: false,
+            favorite: true,
             func: |_t, _i, _x, _y| bool_to_float(rand::random::<f32>() < 0.1),
         },
         Item {
@@ -55,8 +54,8 @@ pub fn items_factory() -> Vec<Item> {
             func: |_t, _i, _x, _y| _y - _t * 4.0,
         },
         Item {
-            name: "create PresetInfo using different color",
-            favorite: false,
+            name: "create patterns using different color",
+            favorite: true,
             func: |_t, _i, _x, _y| [1.0, 0.0, -1.0][(_i % 3.0) as usize],
         },
         Item {
@@ -241,7 +240,7 @@ pub fn items_factory() -> Vec<Item> {
         },
         Item {
             name: "dialogue with an alien by @chiptune",
-            favorite: false,
+            favorite: true,
             func: |_t, _i, _x, _y| 1.0 / 32.0 * (_t / 64.0 * _x * (_i - _x).tan()).tan(),
         },
         Item {
@@ -327,7 +326,7 @@ pub fn items_factory() -> Vec<Item> {
         },
         Item {
             name: "soft wipe",
-            favorite: false,
+            favorite: true,
             func: |_t, _i, _x, _y| (_x - _y) / 24.0 - _t.sin(),
         },
         Item {
@@ -341,4 +340,12 @@ pub fn items_factory() -> Vec<Item> {
             func: |_t, _i, _x, _y| (_x - 5.0).powi(2) + (_y - 5.0).powi(2) - 99.0 * _t.sin(),
         },
     ];
+}
+
+fn bool_to_float(v: bool) -> f32 {
+    if v {
+        1.0
+    } else {
+        0.0
+    }
 }
