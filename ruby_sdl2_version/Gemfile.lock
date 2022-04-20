@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ruby-sdl2 (0.3.5)
+
+PLATFORMS
+  x86_64-darwin-17
+
+DEPENDENCIES
+  ruby-sdl2
+
+BUNDLED WITH
+   2.3.4

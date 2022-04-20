@@ -8,8 +8,9 @@
 | Directory           | Lang | FW     |     |
 |---------------------|------|--------|-----|
 | ruby_sdl_version    | Ruby | SDL    |     |
-| rust_nannou_version | Rust | Nannou |     |
+| ruby_sdl2_version   | Ruby | SDL2   |     |
 | rust_sdl2_version   | Rust | SDL2   |     |
+| rust_nannou_version | Rust | Nannou |     |
 | rust_bevy_version   | Rust | Bevy   | WIP |
 
 ![Image](image.png)
