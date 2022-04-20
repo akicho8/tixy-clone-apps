@@ -8,11 +8,11 @@ Creator: [@aemkei](https://twitter.com/aemkei)
 - It is fun to make it because there is a movement.
 - Thank you to the creator.
 
-| Directory                    | Lang | FW     |     |
-|------------------------------|------|--------|-----|
-| tixy_ruby_clone_using_stylet | Ruby | SDL    |     |
-| tixy_rust_clone_using_nannou | Rust | Nannou |     |
-| tixy_rust_clone_using_sdl2   | Rust | SDL2   |     |
-| tixy_rust_clone_using_bevy   | Rust | Bevy   | WIP |
+| Directory           | Lang | FW     |     |
+|---------------------|------|--------|-----|
+| ruby_sdl_version    | Ruby | SDL    |     |
+| rust_nannou_version | Rust | Nannou |     |
+| rust_sdl2_version   | Rust | SDL2   |     |
+| rust_bevy_version   | Rust | Bevy   | WIP |
 
 ![Image](image.png)
