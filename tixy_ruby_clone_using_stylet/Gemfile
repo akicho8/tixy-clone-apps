@@ -1,0 +1,6 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "stylet_support", :github => "akicho8/stylet_support"
+gem "stylet",         :github => "akicho8/stylet"

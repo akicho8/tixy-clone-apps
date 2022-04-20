@@ -33,7 +33,7 @@ impl Model {
         &self.items[self.item_index as usize]
     }
 
-    fn preset_change(&mut self, app: &App, sign: isize) {
+    fn item_change(&mut self, app: &App, sign: isize) {
         self.item_index = self.items.len() as isize + self.item_index + sign;
         self.item_index %= self.items.len() as isize;
         self.start_time = app.time;
@@ -83,7 +83,10 @@ impl Model {
 }
 
 fn main() {
-    nannou::app(model).event(event).update(update).run();
+    nannou::app(model)
+        .event(event)
+        .update(update)
+        .run();
 }
 
 fn model(app: &App) -> Model {
@@ -116,12 +119,12 @@ fn event(app: &App, model: &mut Model, event: Event) {
     } = event
     {
         match key {
-            Key::Z => model.preset_change(&app, 1),
-            Key::X => model.preset_change(&app, -1),
-            Key::Left => model.preset_change(&app, -1),
-            Key::Right => model.preset_change(&app, 1),
+            Key::Z => model.item_change(&app, 1),
+            Key::X => model.item_change(&app, -1),
+            Key::Left => model.item_change(&app, -1),
+            Key::Right => model.item_change(&app, 1),
             Key::F => model.favorite_only_toggle(),
-            Key::R => model.preset_change(&app, 0),
+            Key::R => model.item_change(&app, 0),
             Key::Q => app.quit(),
             Key::Key3 => app.set_loop_mode(LoopMode::rate_fps(30.0)), // 効いてない
             Key::Key6 => app.set_loop_mode(LoopMode::rate_fps(60.0)), // 効いてない
@@ -132,8 +135,8 @@ fn event(app: &App, model: &mut Model, event: Event) {
 
 fn mouse_pressed(app: &App, model: &mut Model, button: MouseButton) {
     match button {
-        MouseButton::Left => model.preset_change(&app, 1),
-        MouseButton::Right => model.preset_change(&app, -1),
+        MouseButton::Left => model.item_change(&app, 1),
+        MouseButton::Right => model.item_change(&app, -1),
         _ => {}
     }
 }
