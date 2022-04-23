@@ -5,6 +5,8 @@
 require "bundler/setup"
 Bundler.require(:default)
 
+require "active_support/isolated_execution_state"
+
 # Stylet.config.fps = 30
 
 class App < Stylet::Base
@@ -16,13 +18,13 @@ class App < Stylet::Base
   include Stylet::Input::JoystickBindMethod
   include Stylet::Input::MouseButtonBind
 
-  RECT_MODE      = false   # 四角形で描画するか？
-  GRADATION_MODE = true    # グラデーションにするか？
-  SIDE_SIZE      = 16      # 辺の長さ
-  VIEW_SIZE_RATE = 0.8     # 画面に対する表示領域の大きさ
-  COLOR_MAX      = 16 * 10 # 最大255だけど眩しいので控えめにしておく
+  CIRCLE_MODE    = false
+  GRADATION_MODE = false
+  BLOCK_N      = 16
+  VIEW_SIZE_RATE = 0.8
+  COLOR_MAX      = 255
 
-  PresetList = [
+  ItemList = [
     { favorite: false, name: "default",                                              func: -> (t, i, x, y) { sin(y/8+t)                                                     }},
     { favorite: false, name: "for every dot return 0 or 1 to change the visibility", func: -> (t, i, x, y) { rand < 0.1                                                     }},
     { favorite: false, name: "use a float between 0 and 1 to define the size",       func: -> (t, i, x, y) { rand                                                           }},
@@ -91,20 +93,20 @@ class App < Stylet::Base
 
     time = @counter.fdiv(Stylet.config.fps || 60)
     index = 0
-    SIDE_SIZE.times do |y|
-      SIDE_SIZE.times do |x|
-        retval = func_call(time, index, x, y)
-        if retval.kind_of?(Numeric)
-          if retval.nonzero?
-            retval = retval.clamp(-1.0, 1.0)
-            rgb = value_to_color(retval)
-            v = @top_left + @cell_wh.map2(vec2[x, y]) { |a, b| a * b } # それぞれに乗算するため scale ではだめ
-            if RECT_MODE
-              screen.fill_rect(*v, *@cell_wh, rgb)
+    BLOCK_N.times do |y|
+      BLOCK_N.times do |x|
+        r = func_call(time, index, x, y)
+        if r.kind_of?(Numeric)
+          if r.nonzero?
+            r = r.clamp(-1.0, 1.0)
+            rgb = tixy_color(r)
+            center = @inner_top_left + @cell_wh.map2(vec2[x, y]) { |a, b| a * b } + @cell_wh.scale(0.5)
+            radius = @cell_wh.scale(0.5).scale(r.abs).scale(0.95)
+            top_left = center - radius
+            if CIRCLE_MODE
+              screen.drawAAFilledEllipse(*center, *radius, rgb)
             else
-              v2 = v + @half_cell_wh # 円の中心まで半径ぶんずらす
-              radius = @half_cell_wh.scale(value_to_radius_rate(retval)) # 楕円の半径 = 最大半径 * 割合
-              screen.drawAAFilledEllipse(*v2, *radius, rgb) # draw_aa_filled_ellipse は定義されていない
+              screen.fill_rect(*top_left, *(radius * 2), rgb)
             end
           end
         end
@@ -128,20 +130,19 @@ class App < Stylet::Base
   end
 
   def current_preset
-    filtered_preset_list[@preset_index.modulo(filtered_preset_list.size)]
+    filtered_item_list[@preset_index.modulo(filtered_item_list.size)]
   end
 
-  def filtered_preset_list
-    # @filtered_preset_list ||= PresetList.find_all { |e| e[:favorite] }
-    @filtered_preset_list ||= PresetList
+  def filtered_item_list
+    # @filtered_item_list ||= ItemList.find_all { |e| e[:favorite] }
+    @filtered_item_list ||= ItemList
   end
 
   def counter_reset
     @counter = 0
   end
 
-  # 0 は来ない
-  def value_to_color(v)
+  def tixy_color(v)
     rgb = nil
     if GRADATION_MODE
     else
@@ -155,25 +156,15 @@ class App < Stylet::Base
     if v.positive?
       rgb = [c, c, c]
     else
-      rgb = [16, c, c*0.8]
+      rgb = [c, 0, 0]
     end
     rgb
   end
 
-  # 楕円の半径の割り合いを返す
-  def value_to_radius_rate(rv)
-    rv.abs
-  end
-
   def setup_vars
-    @cell_wh      = vec2[srect.w, srect.h].scale(1.0 / SIDE_SIZE).scale(VIEW_SIZE_RATE) # 画面の大きさから1つのセルのサイズを求める
-    @half_cell_wh = @cell_wh.scale(0.5)                                                 # 扱いやすいように半分バージョンも作っておく
-    @top_left     = srect.center - @cell_wh.scale(SIDE_SIZE * 0.5)                      # 左上
+    @cell_wh        = vec2[srect.w, srect.h].scale(1.0 / BLOCK_N).scale(VIEW_SIZE_RATE) # 画面の大きさから1つのセルのサイズを求める
+    @inner_top_left = srect.center - @cell_wh.scale(BLOCK_N * 0.5)                      # 左上
   end
-
-  # def system_infos
-  #   []
-  # end
 
   def screen_open
     super
@@ -181,8 +172,9 @@ class App < Stylet::Base
   end
 
   def preset_change
-    if button.btA.repeat == 1 || button.btB.repeat == 1
-      @preset_index += (button.btA.repeat_0or1 - button.btB.repeat_0or1).to_i
+    if axis.right.press? || axis.left.press? || button.btA.trigger? || button.btB.trigger?
+      @preset_index += axis.right.repeat + button.btA.repeat
+      @preset_index -= axis.left.repeat + button.btB.repeat
       counter_reset
     end
     if button.btC.repeat == 1

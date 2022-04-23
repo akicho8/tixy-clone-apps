@@ -1,11 +1,11 @@
 const GRADATION_MODE: bool = false; // グラデーションにするか？
-const SIDE_SIZE: f32 = 16.0; // 辺の長さ
+const BLOCK_N: f32 = 16.0; // 辺の長さ
 const DIAMETER_RATE: f32 = 0.9; // セルの辺の最大値(比率)
 const VIEW_SIZE_RATE: f32 = 0.95; // 画面に対する表示領域の大きさ
 const COLOR_MAX: i32 = 255; // 色の要素の最大
 const FPS: u32 = 60; // 決め打ち
 
-const SCREEN_WIDTH: u32 = 480;
+const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 480;
 
 pub struct Item {
@@ -57,11 +57,11 @@ struct Model {
 
 impl Model {
     fn setup_vars(&mut self) {
-        self.cell_wh = self.srect.scale((1.0 / SIDE_SIZE) * VIEW_SIZE_RATE); // 画面の大きさから1つのセルのサイズを求める
+        self.cell_wh = self.srect.scale((1.0 / BLOCK_N) * VIEW_SIZE_RATE); // 画面の大きさから1つのセルのサイズを求める
         self.top_left = self
             .srect
             .scale(0.5)
-            .sub(&self.cell_wh.scale(SIDE_SIZE * 0.5)); // 左上
+            .sub(&self.cell_wh.scale(BLOCK_N * 0.5)); // 左上
     }
 
     fn half_cell_wh(&self) -> Vec2 {
@@ -117,11 +117,12 @@ extern crate sdl2;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
-use std::time::Duration;
 
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
+
+    let timer = sdl_context.timer().unwrap();
 
     let window = video_subsystem
         .window("Tixy Rust clone using SDL2", SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -129,7 +130,12 @@ pub fn main() {
         .build()
         .unwrap();
 
-    let mut canvas = window.into_canvas().build().unwrap();
+    let mut canvas = window
+        .into_canvas()
+        .accelerated()
+        .present_vsync()
+        .build()
+        .unwrap();
 
     canvas.set_draw_color(Color::RGB(0, 255, 255));
     canvas.clear();
@@ -145,10 +151,27 @@ pub fn main() {
     };
     model.setup_vars();
 
+    let mut fps;
+    let mut fps_counter = 0;
+    let mut old_time: i32 = timer.ticks() as i32;
+
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
+
+        // FPS
+        if true {
+            fps_counter += 1;
+            let v = timer.ticks() as i32;
+            let t = v - old_time;
+            if t >= 1000 {
+                fps = fps_counter;
+                old_time = v;
+                fps_counter = 0;
+                println!("{:?}", fps);
+            }
+        }
 
         for event in event_pump.poll_iter() {
             match event {
@@ -176,8 +199,8 @@ pub fn main() {
         let mut i = 0.0;
         let t = model.time();
         let item = model.current_item();
-        for y in 0..SIDE_SIZE as usize {
-            for x in 0..SIDE_SIZE as usize {
+        for y in 0..BLOCK_N as usize {
+            for x in 0..BLOCK_N as usize {
                 let x = x as f32;
                 let y = y as f32;
                 let retval = (item.func)(t, i, x, y);
@@ -209,6 +232,5 @@ pub fn main() {
 
         model.counter += 1;
         canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / FPS)); // FIXME: VSYNC同期で切り替えるべき
     }
 }

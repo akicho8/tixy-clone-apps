@@ -1,13 +1,20 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    contracts (0.9)
+    matrix (0.4.2)
     ruby-sdl2 (0.3.5)
+    vector2d (2.2.3)
+      contracts (~> 0.9.0)
 
 PLATFORMS
   x86_64-darwin-17
+  x86_64-darwin-20
 
 DEPENDENCIES
-  ruby-sdl2
+  matrix (~> 0.4.2)
+  ruby-sdl2 (~> 0.3.5)
+  vector2d (~> 2.2)
 
 BUNDLED WITH
    2.3.4

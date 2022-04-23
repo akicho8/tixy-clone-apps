@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/akicho8/stylet.git
-  revision: ef56e809773f3f5333732ca7eb1368374e743cf4
+  revision: 604d79fe670587573afaa48b8fb8c3ad36dc64e0
   specs:
     stylet (0.0.2)
       activemodel
@@ -15,7 +15,7 @@ GIT
 
 GIT
   remote: https://github.com/akicho8/stylet_support.git
-  revision: d5fd66b8feab48d5f0053e75c5450cd8bba095e0
+  revision: 03cf0c35aaf540c2a79d3f076e5d56acdeaf6a76
   specs:
     stylet_support (0.0.5)
       activesupport
@@ -23,14 +23,13 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
-    activemodel (6.1.5)
-      activesupport (= 6.1.5)
-    activesupport (6.1.5)
+    activemodel (7.0.2.3)
+      activesupport (= 7.0.2.3)
+    activesupport (7.0.2.3)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 1.6, < 2)
       minitest (>= 5.1)
       tzinfo (~> 2.0)
-      zeitwerk (~> 2.3)
     concurrent-ruby (1.1.10)
     i18n (1.10.0)
       concurrent-ruby (~> 1.0)
@@ -43,14 +42,13 @@ GEM
     rubysdl (2.2.0)
     tzinfo (2.0.4)
       concurrent-ruby (~> 1.0)
-    zeitwerk (2.5.4)
 
 PLATFORMS
-  x86_64-darwin-17
+  x86_64-darwin-20
 
 DEPENDENCIES
   stylet!
   stylet_support!
 
 BUNDLED WITH
-   2.3.4
+   2.3.12

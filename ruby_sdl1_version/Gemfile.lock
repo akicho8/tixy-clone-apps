@@ -1,0 +1,17 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    matrix (0.4.2)
+    rsdl (0.1.5)
+    rubysdl (2.2.0)
+
+PLATFORMS
+  x86_64-darwin-20
+
+DEPENDENCIES
+  matrix (~> 0.4.2)
+  rsdl
+  rubysdl
+
+BUNDLED WITH
+   2.3.12

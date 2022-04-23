@@ -5,7 +5,7 @@ const PADDING: f32 = 16.0; // 余白
 const DEBUG_MODE: bool = true; // 画面上の情報
 const GRADATION_MODE: bool = false; // グラデーションにするか？
 
-const SCREEN_WIDTH: u32 = 480;
+const SCREEN_WIDTH: u32 = 640;
 const SCREEN_HEIGHT: u32 = 480;
 
 use nannou::geom::Rect;

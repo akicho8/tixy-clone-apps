@@ -1,218 +1,348 @@
+# require "bundler/setup"
+# Bundler.require(:default)
+#
+# SDL2.init(SDL2::INIT_EVERYTHING)
+# pos = SDL2::Window::POS_CENTERED
+# window = SDL2::Window.create("(title)", pos, pos, 640, 480, 0)
+# flags = 0
+# flags |= SDL2::Renderer::Flags::PRESENTVSYNC
+# renderer = window.create_renderer(-1, flags)
+#
+# 120.times do
+#   SDL2::Event.poll
+#   renderer.present
+# end
+# exit
+
+################################################################################
+
+# require "bundler/setup"
+# Bundler.require(:default)
+#
+# SDL2.init(SDL2::INIT_EVERYTHING)
+# pos = SDL2::Window::POS_CENTERED
+# window = SDL2::Window.create("(title)", pos, pos, 640, 480, 0)
+# flags = 0
+# flags |= SDL2::Renderer::Flags::ACCELERATED
+# flags |= SDL2::Renderer::Flags::PRESENTVSYNC
+# renderer = window.create_renderer(-1, flags)
+#
+# include Math
+#
+# frame_counter = 0
+# loop do
+#   while ev = SDL2::Event.poll
+#     case ev
+#     when SDL2::Event::Quit
+#       exit
+#     when SDL2::Event::KeyDown
+#       case ev.scancode
+#       when SDL2::Key::Scan::ESCAPE
+#         exit
+#       when SDL2::Key::Scan::Q
+#         exit
+#       end
+#     end
+#   end
+#
+#   renderer.draw_blend_mode = SDL2::BlendMode::BLEND
+#   renderer.draw_color = [0, 0, 64, 28]
+#   renderer.fill_rect(SDL2::Rect.new(0, 0, *window.size))
+#
+#   renderer.draw_blend_mode = SDL2::BlendMode::NONE
+#   renderer.draw_color = [255, 255, 255]
+#
+#   r = 64
+#   w, h = window.size
+#   x = w / 2 + cos(PI * frame_counter * 0.02 * 0.7) * w * 0.4
+#   y = h / 2 + sin(PI * frame_counter * 0.02 * 0.8) * h * 0.4
+#   renderer.fill_rect(SDL2::Rect.new(x - r, y - r, r * 2, r * 2))
+#
+#   renderer.present
+#   frame_counter += 1
+# end
+# exit
+
+################################################################################
+
 require "bundler/setup"
 Bundler.require(:default)
 
-require "pathname"
-require "matrix"
-
-class Vec2 < Vector
-end
-
-class App
+class Base
   include Math
 
-  GRADATION_MODE = false   # グラデーションにするか？
-  SIDE_SIZE      = 16      # 辺の長さ
-  VIEW_SIZE_RATE = 1.0     # 画面に対する表示領域の大きさ
-  COLOR_MAX      = 255     # 色の要素の最大
-  FPS            = 60      # 決め打ち
-
-  PresetList = [
-    { favorite: false, name: "default",                                              func: -> (t, i, x, y) { sin(y/8+t)                                                     }},
-    { favorite: false, name: "for every dot return 0 or 1 to change the visibility", func: -> (t, i, x, y) { rand < 0.1                                                     }},
-    { favorite: false, name: "use a float between 0 and 1 to define the size",       func: -> (t, i, x, y) { rand                                                           }},
-    { favorite: false, name: "parameter `t` is the time in seconds",                 func: -> (t, i, x, y) { sin(t)                                                         }},
-    { favorite: false, name: "parameter `i` is the index of the dot (0..255)",       func: -> (t, i, x, y) { i / 256                                                        }},
-    { favorite: false, name: "`x` is the column index from 0 to 15",                 func: -> (t, i, x, y) { x / 16                                                         }},
-    { favorite: false, name: "`y` is the row also from 0 to 15",                     func: -> (t, i, x, y) { y / 16                                                         }},
-    { favorite: false, name: "positive numbers are white, negatives are red",        func: -> (t, i, x, y) { y - 7.5                                                        }},
-    { favorite: false, name: "use the time to animate values",                       func: -> (t, i, x, y) { y - t                                                          }},
-    { favorite: false, name: "multiply the time to change the speed",                func: -> (t, i, x, y) { y - t*4                                                        }},
-    { favorite: false, name: "create PresetInfo using different color",              func: -> (t, i, x, y) { [1, 0, -1][i%3]                                                }},
-    { favorite: true,  name: "skip `Math` to use methods",                           func: -> (t, i, x, y) { sin(t-sqrt((x-7.5)**2+(y-6)**2))                               }},
-    { favorite: false, name: "more examples",                                        func: -> (t, i, x, y) { sin(y/8 + t)                                                   }},
-    { favorite: false, name: "simple triangle",                                      func: -> (t, i, x, y) { y - x                                                          }},
-    { favorite: false, name: "quarter triangle",                                     func: -> (t, i, x, y) { (y > x) && (14-x < y)                                          }},
-    { favorite: false, name: "pattern",                                              func: -> (t, i, x, y) { i%4 - y%4                                                      }},
-    { favorite: false, name: "grid",                                                 func: -> (t, i, x, y) { (i%4)>0 && (y%4)>0                                             }},
-    { favorite: false, name: "square",                                               func: -> (t, i, x, y) { x>3 && y>3 && x<12 && y<12                                     }},
-    { favorite: false, name: "animated square",                                      func: -> (t, i, x, y) { (x>t && y>t && x<15-t && y<15-t) ? -1 : 0                      }},
-    { favorite: false, name: "mondrian squares",                                     func: -> (t, i, x, y) { (y-6) * (x-6)                                                  }},
-    { favorite: true,  name: "moving cross",                                         func: -> (t, i, x, y) { (y-4*t) * (x-2-t)                                              }},
-    { favorite: false, name: "sierpinski",                                           func: -> (t, i, x, y) { (4*t).to_i & i.to_i & x.to_i & y.to_i                          }},
-    { favorite: false, name: "binary clock",                                         func: -> (t, i, x, y) { y==8 && (t*10).to_i & (1<<x)                                   }},
-    { favorite: false, name: "random noise",                                         func: -> (t, i, x, y) { rand(-1.0..1.0)                                                }},
-    { favorite: false, name: "static smooth noise",                                  func: -> (t, i, x, y) { sin(i**2)                                                      }},
-    { favorite: true,  name: "animated smooth noise",                                func: -> (t, i, x, y) { cos(t + i + x * y)                                             }},
-    { favorite: true,  name: "waves",                                                func: -> (t, i, x, y) { sin(x/2) - sin(x-t) - y+6                                      }},
-    { favorite: true,  name: "bloop bloop bloop by @v21",                            func: -> (t, i, x, y) { (x-8)*(y-8) - sin(t)*64                                        }},
-    { favorite: true,  name: "fireworks by @p_malin and @aemkei",                    func: -> (t, i, x, y) { -0.4/(hypot(x-t%10,y-t%8)-t%2*9)                               }},
-    { favorite: true,  name: "ripples by @thespite",                                 func: -> (t, i, x, y) { sin(t-sqrt(x*x+y*y))                                           }},
-    { favorite: true,  name: "scrolling TIXY font by @atesgoral",                    func: -> (t, i, x, y) { [5463,2194,2386][y.to_i + (t*9).to_i & 7] & (1 << x-1)         }},
-    { favorite: true,  name: "3d checker board by @p_malin",                         func: -> (t, i, x, y) { y>0 && (((x-8) / y + t*5).to_i & 1 ^ (1/y*8).to_i & 1) * y / 5 }},
-    { favorite: false, name: "sticky blood by @joeytwiddle",                         func: -> (t, i, x, y) { y-t*3+9+3*cos(x*3-t)-5*sin(x*7)                                }},
-    { favorite: true,  name: "3d starfield by @p_malin",                             func: -> (t, i, x, y) { d=y*y%5.9+1;(((x+t*50/d).to_i&15).zero? ? 1/d : 0)             }},
-    { favorite: false, name: "dialogue with an alien by @chiptune",                  func: -> (t, i, x, y) { 1.0/32.0*tan(t/64.0*x*tan(i-x))                                }},
-    { favorite: true,  name: "space invader by @keithclarkcouk + @zozuar",           func: -> (t, i, x, y) { 'p}¶¼<¼¶}p'.codepoints[x] & 2**y.to_i                        }},
-    { favorite: true,  name: "hungry pac man by @p_malin and @aemkei",               func: -> (t, i, x, y) { hypot(x-=t%4*5,y-=8)<6 && (x<y || y<-x)                        }},
-    { favorite: false, name: "spectrum analyser by @joeytwiddle",                    func: -> (t, i, x, y) { x.to_i.even? && y < 9 && y > (4 + sin(8*t+x*x) + x / 4)        }},
-    { favorite: false, name: "diagonals",                                            func: -> (t, i, x, y) { y == x || ((15-x == y) ? -1 : 0 )                              }},
-    { favorite: false, name: "frame",                                                func: -> (t, i, x, y) { x==0 || x==15 || y==0 || y==15                                 }},
-    { favorite: true,  name: "drop",                                                 func: -> (t, i, x, y) { 8*t%13 - hypot(x-7.5, y-7.5)                                   }},
-    { favorite: true,  name: "rotation",                                             func: -> (t, i, x, y) { sin(2*atan((y-7.5)/(x-7.5))+5*t)                               }},
-    { favorite: true,  name: "wipe",                                                 func: -> (t, i, x, y) { (x-y) - sin(t) * 16                                            }},
-    { favorite: false, name: "soft wipe",                                            func: -> (t, i, x, y) { (x-y)/24 - sin(t)                                              }},
-    { favorite: false, name: "disco",                                                func: -> (t, i, x, y) { sin(t*5) * tan(t*7)                                            }},
-    { favorite: false, name: "input is limited to 32 characters!",                   func: -> (t, i, x, y) { (x-5)**2 + (y-5)**2 - 99*sin(t)                                }},
-  ]
-
-  def initialize
-    @preset_index = 0
-    @counter      = 0
+  class << self
+    def run(*args)
+      new(*args).run
+    end
   end
 
   def run
-    SDL2.init(SDL2::INIT_EVERYTHING)
-
-    @window_flags = 0
-    # @window_flags |= SDL2::Window::Flags::FULLSCREEN
-    @window_flags |= SDL2::Window::Flags::FULLSCREEN_DESKTOP
-
-    @window = SDL2::Window.create("(WindowTitle)", SDL2::Window::POS_CENTERED, SDL2::Window::POS_CENTERED, 640, 480, @window_flags)
-    @renderer = @window.create_renderer(-1, SDL2::Renderer::Flags::PRESENTVSYNC)
-    @srect = Vec2[*@window.size]
-
-    setup_vars
-
-    @real_fps = FPS
-    fps_counter = 0
-    old_time = SDL2.get_ticks
-
+    setup
     loop do
-      while ev = SDL2::Event.poll
-        case ev
-        when SDL2::Event::KeyDown
-          if ev.scancode == SDL2::Key::Scan::ESCAPE
-            exit
-          end
-          if ev.scancode == SDL2::Key::Scan::Q
-            exit
-          end
-          if ev.scancode == SDL2::Key::Scan::Z
-            preset_change(1)
-          end
-          if ev.scancode == SDL2::Key::Scan::X
-            preset_change(-1)
-          end
-        end
-      end
-
-      @renderer.draw_color = [0, 0, 0]
-      @renderer.clear
-
-      if false
-        # https://ohai.github.io/ruby-sdl2/doc-en/SDL2/Mouse.html
-        @local_state = SDL2::Mouse.state
-        @renderer.draw_color = [0, 0, 255]
-        rect = SDL2::Rect.new(@local_state.x, @local_state.y, 32, 32)
-        @renderer.fill_rect(rect)
-      end
-
-      time = @counter.fdiv(FPS)
-      index = 0
-      SIDE_SIZE.times do |y|
-        SIDE_SIZE.times do |x|
-          retval = func_call(time, index, x, y)
-          if retval.kind_of?(Numeric)
-            if retval.nonzero?
-              retval = retval.clamp(-1.0, 1.0)
-              v = @top_left + @cell_wh.map2([x, y]) { |a, b| a * b } # それぞれに乗算するため scale ではだめ
-              radius = @half_cell_wh * value_to_radius_rate(retval)  # 楕円の半径 = 最大半径 * 割合
-              center = v + @half_cell_wh                             # セルの中心
-              v2 = center - radius                                   # 長方形の左上
-              @renderer.draw_color = value_to_color(retval)
-              @renderer.fill_rect(SDL2::Rect.new(*v2, *(radius*2)))  # v2 から [radius, radius] の長方形を描画
-            end
-          end
-          index += 1
-        end
-      end
-
-      @counter += 1
-
-      fps_counter += 1
-      v = SDL2.get_ticks
-      t = v - old_time
-      if t >= 1000
-        @real_fps = fps_counter
-        # puts "#{@real_fps} FPS"
-        old_time = v
-        fps_counter = 0
-      end
-
-      @renderer.present
+      event_loop
+      update
+      before_view
+      view
+      after_view
     end
   end
 
-  def func_call(t, i, x, y)
-    if e = current_preset
-      v = instance_exec(t, Float(i), Float(x), Float(y), &e[:func])
-      if v == true
-        v = 1.0
-      elsif v == false || v.nil?
-        v = 0.0
+  private
+
+  def setup
+    SDL2.init(SDL2::INIT_EVERYTHING)
+  end
+
+  def update
+  end
+
+  def view
+  end
+
+  def before_view
+  end
+
+  def after_view
+  end
+
+  def event_loop
+    while ev = SDL2::Event.poll
+      event_handle(ev)
+    end
+  end
+
+  def event_handle(ev)
+    case ev
+    when SDL2::Event::Quit
+      exit
+    when SDL2::Event::KeyDown
+      case ev.scancode
+      when SDL2::Key::Scan::ESCAPE
+        exit
+      when SDL2::Key::Scan::Q
+        exit
       end
-      v
     end
-  end
-
-  def current_preset
-    filtered_preset_list[@preset_index.modulo(filtered_preset_list.size)]
-  end
-
-  def filtered_preset_list
-    @filtered_preset_list ||= PresetList.find_all { |e| e[:favorite] }
-    # @filtered_preset_list ||= PresetList
-  end
-
-  def counter_reset
-    @counter = 0
-  end
-
-  # 0 は来ない
-  def value_to_color(v)
-    rgb = nil
-    if GRADATION_MODE
-    else
-      if v.positive?
-        v = 1.0
-      else
-        v = -1.0
-      end
-    end
-    c = v.abs * COLOR_MAX
-    if v.positive?
-      rgb = [c, c, c]
-    else
-      rgb = [c, 0, 0]
-    end
-    rgb
-  end
-
-  # 楕円の半径の割り合いを返す
-  def value_to_radius_rate(rv)
-    rv.abs * 0.9
-  end
-
-  def setup_vars
-    @cell_wh      = @srect * (1.0 / SIDE_SIZE) * VIEW_SIZE_RATE # 画面の大きさから1つのセルのサイズを求める
-    @half_cell_wh = @cell_wh * 0.5                              # 扱いやすいように半分バージョンも作っておく
-    @top_left     = @srect * 0.5 - @cell_wh * SIDE_SIZE * 0.5   # 左上
-  end
-
-  def preset_change(sign)
-    @preset_index += sign
-    counter_reset
   end
 end
 
-App.new.run
+# Base.run
+# exit
+
+################################################################################
+
+module WindowMethods
+  attr_accessor :window
+  attr_accessor :renderer
+  attr_accessor :frame_counter
+
+  def setup
+    super
+
+    flags = 0
+    # flags |= SDL2::Window::Flags::FULLSCREEN
+    # flags |= SDL2::Window::Flags::FULLSCREEN_DESKTOP
+    pos = SDL2::Window::POS_CENTERED
+    @window = SDL2::Window.create("(Title)", pos, pos, 640, 480, flags)
+
+    flags = 0
+    flags |= SDL2::Renderer::Flags::ACCELERATED
+    flags |= SDL2::Renderer::Flags::PRESENTVSYNC
+    @renderer = @window.create_renderer(-1, flags)
+
+    @frame_counter = 0
+  end
+
+  def before_view
+    super
+
+    renderer.draw_blend_mode = SDL2::BlendMode::BLEND
+    renderer.draw_color = [0, 0, 64, 28]
+    renderer.fill_rect(SDL2::Rect.new(0, 0, *@window.size))
+
+    renderer.draw_blend_mode = SDL2::BlendMode::NONE
+    renderer.draw_color = [255, 255, 255]
+  end
+
+  def after_view
+    super
+
+    @frame_counter += 1
+    renderer.present
+  end
+end
+
+Base.prepend(WindowMethods)
+
+# Base.run
+
+################################################################################
+
+# class App < Base
+#   def view
+#     super
+#
+#     r = 64
+#     w, h = window.size
+#     x = w / 2 + cos(PI * frame_counter * 0.02 * 0.7) * w * 0.4
+#     y = h / 2 + sin(PI * frame_counter * 0.02 * 0.8) * h * 0.4
+#     renderer.fill_rect(SDL2::Rect.new(x - r, y - r, r * 2, r * 2))
+#   end
+#
+#   run
+# end
+
+################################################################################
+
+module FpsCounterMethods
+  attr_reader :fps
+
+  def setup
+    super
+
+    @fps = 60
+    @fps_counter = 0
+    @old_time = SDL2.get_ticks
+  end
+
+  def update
+    super
+
+    @fps_counter += 1
+    v = SDL2.get_ticks
+    t = v - @old_time
+    if t >= 1000
+      @fps = @fps_counter
+      @old_time = v
+      @fps_counter = 0
+    end
+  end
+end
+
+Base.prepend(FpsCounterMethods)
+
+# Base.run
+# exit
+
+################################################################################
+
+require "pathname"
+
+module FontMethods
+  def setup
+    super
+
+    font_file = "~/Library/Fonts/Ricty-Regular.ttf"
+    font_size = 32
+
+    SDL2::TTF.init
+    @font = SDL2::TTF.open(Pathname(font_file).expand_path.to_s, font_size)
+    @font.kerning = true
+  end
+
+  def after_view
+    system_line "#{frame_counter} #{fps}fps"
+
+    super
+  end
+
+  def system_line(text)
+    rect = SDL2::Rect.new(0, 0, *@font.size_text(text))
+
+    renderer.draw_blend_mode = SDL2::BlendMode::NONE
+    renderer.draw_color = [0, 0, 128]
+    renderer.fill_rect(rect)
+
+    font_color = [255, 255, 255]
+    texture = renderer.create_texture_from(@font.render_blended(text, font_color))
+    renderer.copy(texture, nil, rect)
+  end
+end
+
+Base.prepend(FontMethods)
+
+# Base.run
+# exit
+
+################################################################################
+
+# bundle remove vector2d
+# bundle add matrix
+
+class Vector2d < Vector
+  def *(v)
+    if v.kind_of?(self.class)
+      map2(v) { |a, b| a * b }
+    else
+      super
+    end
+  end
+end
+
+def Vector2d(*args)
+  Vector2d[*args]
+end
+
+# Vector2d(2, 3) * Vector2d(2, 2) # => Vector[4, 6]
+# exit
+
+################################################################################
+
+class TixyCloneApp < Base
+  BLOCK_N = 16
+
+  def setup
+    super
+
+    @window_rect    = Vector2d(*window.size)
+    @cell_wh        = @window_rect * 1.0 / BLOCK_N
+    @inner_top_left = @window_rect * 0.5 - @cell_wh * BLOCK_N * 0.5
+  end
+
+  def before_view
+    renderer.draw_color = [0, 0, 0]
+    renderer.clear
+  end
+
+  def view
+    super
+
+    time = SDL2.get_ticks.fdiv(1000)
+    index = 0
+    BLOCK_N.times do |y|
+      BLOCK_N.times do |x|
+        r = tixy_func(time, index, x, y)
+        if r.nonzero?
+          r = r.clamp(-1.0, 1.0)
+          center = @inner_top_left + @cell_wh * Vector2d(x, y) + @cell_wh * 0.5
+          radius = @cell_wh * 0.5 * r.abs * 0.95
+          top_left = center - radius
+          renderer.draw_color = tixy_color(r)
+          renderer.fill_rect(SDL2::Rect.new(*top_left, *(radius * 2)))
+        end
+        index += 1
+      end
+    end
+  end
+
+  def tixy_func(t, i, x, y)
+    sin(t - sqrt((x - 7.5)**2 + (y - 6)**2))
+  end
+
+  def tixy_color(v)
+    if v.positive?
+      v = 1.0
+    else
+      v = -1.0
+    end
+    c = v.abs * 255
+    if v.positive?
+      [c, c, c]
+    else
+      [c, 0, 0]
+    end
+  end
+
+  run
+end
