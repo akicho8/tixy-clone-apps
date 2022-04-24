@@ -76,7 +76,7 @@ class App < Stylet::Base
   def initialize(*)
     super
 
-    @preset_index = 0
+    @item_index = 0
     @counter      = 0
   end
 
@@ -88,10 +88,10 @@ class App < Stylet::Base
     key_bit_update_all
     key_counter_update_all
 
-    vputs "#{@preset_index}: #{current_preset[:name]}"
+    vputs "#{@item_index}: #{current_preset[:name]}"
     preset_change
 
-    time = @counter.fdiv(Stylet.config.fps || 60)
+    time = SDL.get_ticks.fdiv(1000)
     index = 0
     BLOCK_N.times do |y|
       BLOCK_N.times do |x|
@@ -130,7 +130,7 @@ class App < Stylet::Base
   end
 
   def current_preset
-    filtered_item_list[@preset_index.modulo(filtered_item_list.size)]
+    filtered_item_list[@item_index.modulo(filtered_item_list.size)]
   end
 
   def filtered_item_list
@@ -173,8 +173,8 @@ class App < Stylet::Base
 
   def preset_change
     if axis.right.press? || axis.left.press? || button.btA.trigger? || button.btB.trigger?
-      @preset_index += axis.right.repeat + button.btA.repeat
-      @preset_index -= axis.left.repeat + button.btB.repeat
+      @item_index += axis.right.repeat + button.btA.repeat
+      @item_index -= axis.left.repeat + button.btB.repeat
       counter_reset
     end
     if button.btC.repeat == 1
