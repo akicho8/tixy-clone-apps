@@ -7,8 +7,8 @@
 
 | Directory           | Lang | FW     |     |
 |---------------------|------|--------|-----|
-| ruby_stylet_version | Ruby | SDL    | FW  |
-| ruby_sdl1_version   | Ruby | SDL    |     |
+| ruby_stylet_version | Ruby | SDL1   | FW  |
+| ruby_sdl1_version   | Ruby | SDL1   |     |
 | ruby_sdl2_version   | Ruby | SDL2   |     |
 | rust_sdl2_version   | Rust | SDL2   |     |
 | rust_nannou_version | Rust | Nannou |     |
