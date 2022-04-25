@@ -290,14 +290,14 @@ end
 ################################################################################
 
 class TixyCloneApp < Base
-  BLOCK_N = 16
+  CELL_N = 16
 
   def setup
     super
 
     @window_rect    = Vector2d(*window.size)
-    @cell_wh        = @window_rect * 1.0 / BLOCK_N
-    @inner_top_left = @window_rect * 0.5 - @cell_wh * BLOCK_N * 0.5
+    @cell_wh        = @window_rect * 1.0 / CELL_N
+    @inner_top_left = @window_rect * 0.5 - @cell_wh * CELL_N * 0.5
   end
 
   def before_view
@@ -310,8 +310,8 @@ class TixyCloneApp < Base
 
     time = SDL2.get_ticks.fdiv(1000)
     index = 0
-    BLOCK_N.times do |y|
-      BLOCK_N.times do |x|
+    CELL_N.times do |y|
+      CELL_N.times do |x|
         r = tixy_func(time, index, x, y)
         if r.nonzero?
           r = r.clamp(-1.0, 1.0)

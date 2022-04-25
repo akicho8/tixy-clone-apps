@@ -20,7 +20,7 @@ class App < Stylet::Base
 
   CIRCLE_MODE    = false
   GRADATION_MODE = false
-  BLOCK_N      = 16
+  CELL_N      = 16
   VIEW_SIZE_RATE = 0.8
   COLOR_MAX      = 255
 
@@ -93,8 +93,8 @@ class App < Stylet::Base
 
     time = SDL.get_ticks.fdiv(1000)
     index = 0
-    BLOCK_N.times do |y|
-      BLOCK_N.times do |x|
+    CELL_N.times do |y|
+      CELL_N.times do |x|
         r = func_call(time, index, x, y)
         if r.kind_of?(Numeric)
           if r.nonzero?
@@ -162,8 +162,8 @@ class App < Stylet::Base
   end
 
   def setup_vars
-    @cell_wh        = vec2[srect.w, srect.h].scale(1.0 / BLOCK_N).scale(VIEW_SIZE_RATE) # 画面の大きさから1つのセルのサイズを求める
-    @inner_top_left = srect.center - @cell_wh.scale(BLOCK_N * 0.5)                      # 左上
+    @cell_wh        = vec2[srect.w, srect.h].scale(1.0 / CELL_N).scale(VIEW_SIZE_RATE) # 画面の大きさから1つのセルのサイズを求める
+    @inner_top_left = srect.center - @cell_wh.scale(CELL_N * 0.5)                      # 左上
   end
 
   def screen_open

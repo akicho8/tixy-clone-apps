@@ -2,7 +2,7 @@ require "./mini_framework"
 require "./item_list"
 
 class App < Base
-  BLOCK_N      = 16      # 辺の長さ
+  CELL_N      = 16      # 辺の長さ
   VIEW_SIZE_RATE = 1.0     # 画面に対する表示領域の大きさ
   COLOR_MAX      = 255     # 色の要素の最大
 
@@ -12,8 +12,8 @@ class App < Base
     @item_index = 0
 
     @window_rect    = Vector2d(*window.size)
-    @cell_wh        = @window_rect * 1.0 / BLOCK_N
-    @inner_top_left = @window_rect * 0.5 - @cell_wh * BLOCK_N * 0.5
+    @cell_wh        = @window_rect * 1.0 / CELL_N
+    @inner_top_left = @window_rect * 0.5 - @cell_wh * CELL_N * 0.5
   end
 
   def event_handle(ev)
@@ -38,8 +38,8 @@ class App < Base
 
     time = SDL2.get_ticks.fdiv(1000)
     index = 0
-    BLOCK_N.times do |y|
-      BLOCK_N.times do |x|
+    CELL_N.times do |y|
+      CELL_N.times do |x|
         r = func_call(time, index, x, y)
         if r.kind_of?(Numeric)
           if r.nonzero?

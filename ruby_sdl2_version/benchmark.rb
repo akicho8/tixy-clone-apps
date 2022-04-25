@@ -15,7 +15,7 @@ def Vector2d(*args)
   Vector2d[*args]
 end
 
-BLOCK_N = 16
+CELL_N = 16
 
 SDL2.init(SDL2::INIT_EVERYTHING)
 
@@ -31,8 +31,8 @@ flags |= SDL2::Renderer::Flags::PRESENTVSYNC
 renderer = window.create_renderer(-1, flags)
 
 window_rect    = Vector2d(*window.size)
-cell_wh        = window_rect * 0.9 / BLOCK_N
-inner_top_left = window_rect * 0.5 - cell_wh * BLOCK_N * 0.5
+cell_wh        = window_rect * 0.9 / CELL_N
+inner_top_left = window_rect * 0.5 - cell_wh * CELL_N * 0.5
 
 frame_counter = 0
 
@@ -69,8 +69,8 @@ loop do
   renderer.clear
 
   radius = cell_wh * 0.5 * 0.95
-  BLOCK_N.times do |y|
-    BLOCK_N.times do |x|
+  CELL_N.times do |y|
+    CELL_N.times do |x|
       center = inner_top_left + cell_wh * Vector2d(x, y) + cell_wh * 0.5
       top_left = center - radius
       renderer.draw_color = rand(2).zero? ? [255, 0, 0] : [255, 255, 255]

@@ -1,4 +1,4 @@
-const BLOCK_N: f32 = 16.0; // 辺のセル個数
+const CELL_N: f32 = 16.0; // 辺のセル個数
 const COLOR_MAX: i32 = 255; // 色の要素の最大
 const DIAMETER_RATE: f32 = 0.9; // セルの辺の最大値(比率)
 const PADDING: f32 = 16.0; // 余白
@@ -143,7 +143,7 @@ fn mouse_pressed(app: &App, model: &mut Model, button: MouseButton) {
 
 fn update(app: &App, model: &mut Model, _update: Update) {
     model.view_rect = app.window_rect().pad(PADDING);
-    model.cell_wh = model.view_rect.wh() / BLOCK_N; // 画面の大きさから1つのセルのサイズを求める
+    model.cell_wh = model.view_rect.wh() / CELL_N; // 画面の大きさから1つのセルのサイズを求める
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
@@ -153,8 +153,8 @@ fn view(app: &App, model: &Model, frame: Frame) {
     let mut i = 0.0;
     let t = app.time - model.start_time;
     let item = model.current_item();
-    for y in 0..BLOCK_N as usize {
-        for x in 0..BLOCK_N as usize {
+    for y in 0..CELL_N as usize {
+        for x in 0..CELL_N as usize {
             let xy = vec2(x as f32, y as f32);
             let retval = (item.func)(t, i, xy.x, xy.y);
             if retval != 0.0 {

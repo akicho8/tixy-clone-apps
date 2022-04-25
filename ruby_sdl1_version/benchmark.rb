@@ -2,7 +2,7 @@
 require "bundler/setup"
 Bundler.require(:default)
 
-BLOCK_N = 16
+CELL_N = 16
 
 class Vector2d < Vector
   def *(v)
@@ -36,8 +36,8 @@ flags |= SDL::FULLSCREEN
 @fps_counter = 0
 @old_time = SDL.get_ticks
 
-@cell_wh        = @window_rect * 0.9 / BLOCK_N
-@inner_top_left = @window_rect * 0.5 - @cell_wh * BLOCK_N * 0.5
+@cell_wh        = @window_rect * 0.9 / CELL_N
+@inner_top_left = @window_rect * 0.5 - @cell_wh * CELL_N * 0.5
 
 loop do
   while event = SDL::Event2.poll
@@ -69,8 +69,8 @@ loop do
 
   @screen.fill_rect(0, 0, *@window_rect, [0, 0, 0])
 
-  BLOCK_N.times do |y|
-    BLOCK_N.times do |x|
+  CELL_N.times do |y|
+    CELL_N.times do |x|
       center = @inner_top_left + @cell_wh * Vector2d(x, y) + @cell_wh * 0.5
       radius = @cell_wh * 0.5 * 0.95
       top_left = center - radius

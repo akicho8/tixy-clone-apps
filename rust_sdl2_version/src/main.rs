@@ -1,5 +1,5 @@
 const GRADATION_MODE: bool = false; // グラデーションにするか？
-const BLOCK_N: f32 = 16.0; // 辺の長さ
+const CELL_N: f32 = 16.0; // 辺の長さ
 const DIAMETER_RATE: f32 = 0.9; // セルの辺の最大値(比率)
 const VIEW_SIZE_RATE: f32 = 0.95; // 画面に対する表示領域の大きさ
 const COLOR_MAX: i32 = 255; // 色の要素の最大
@@ -57,11 +57,11 @@ struct Model {
 
 impl Model {
     fn setup_vars(&mut self) {
-        self.cell_wh = self.srect.scale((1.0 / BLOCK_N) * VIEW_SIZE_RATE); // 画面の大きさから1つのセルのサイズを求める
+        self.cell_wh = self.srect.scale((1.0 / CELL_N) * VIEW_SIZE_RATE); // 画面の大きさから1つのセルのサイズを求める
         self.top_left = self
             .srect
             .scale(0.5)
-            .sub(&self.cell_wh.scale(BLOCK_N * 0.5)); // 左上
+            .sub(&self.cell_wh.scale(CELL_N * 0.5)); // 左上
     }
 
     fn half_cell_wh(&self) -> Vec2 {
@@ -199,8 +199,8 @@ pub fn main() {
         let mut i = 0.0;
         let t = model.time();
         let item = model.current_item();
-        for y in 0..BLOCK_N as usize {
-            for x in 0..BLOCK_N as usize {
+        for y in 0..CELL_N as usize {
+            for x in 0..CELL_N as usize {
                 let x = x as f32;
                 let y = y as f32;
                 let retval = (item.func)(t, i, x, y);
